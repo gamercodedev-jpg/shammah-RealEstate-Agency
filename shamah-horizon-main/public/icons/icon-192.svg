@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#2f855a" rx="24" />
+  <circle cx="60" cy="60" r="28" fill="#fff" opacity="0.06" />
+  <g transform="translate(36,38)">
+    <rect x="56" y="30" width="76" height="16" rx="4" fill="#FF5722" />
+    <rect x="0" y="0" width="76" height="16" rx="4" fill="#fff" opacity="0.08" />
+  </g>
+  <text x="50%" y="86%" font-family="Montserrat, sans-serif" font-size="18" fill="#fff" text-anchor="middle">Shamah</text>
+</svg>
