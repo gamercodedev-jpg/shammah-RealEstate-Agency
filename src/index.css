@@ -1,0 +1,178 @@
+@import "@fontsource/montserrat/400.css";
+@import "@fontsource/montserrat/500.css";
+@import "@fontsource/montserrat/600.css";
+@import "@fontsource/montserrat/700.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Shammah Real Estate Design System
+   Zambian Flag-Inspired: Forest Green (#2C9143) and Bold Orange (#FF5722)
+   All colors in HSL format
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 11% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 11% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 11% 15%;
+
+    /* Forest Green - Primary brand color */
+    --primary: 138 53% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Light green tint for secondary */
+    --secondary: 138 30% 95%;
+    --secondary-foreground: 138 53% 25%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 210 11% 45%;
+
+    /* Bold Orange - Accent/CTA color */
+    --accent: 14 100% 57%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 138 53% 36%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 138 53% 20%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 138 53% 20%;
+    --sidebar-accent: 138 40% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 138 40% 30%;
+    --sidebar-ring: 14 100% 57%;
+
+    /* Custom tokens */
+    --success: 138 53% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 10%;
+
+    /* Typography */
+    --font-heading: "Montserrat", sans-serif;
+    --font-body: "Inter", sans-serif;
+  }
+
+  .dark {
+    --background: 210 15% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 210 15% 10%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 210 15% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 138 53% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 138 30% 15%;
+    --secondary-foreground: 138 40% 85%;
+
+    --muted: 210 15% 18%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 14 100% 57%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 20%;
+    --input: 210 15% 20%;
+    --ring: 138 53% 45%;
+
+    --sidebar-background: 210 15% 6%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 138 53% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 210 15% 20%;
+    --sidebar-ring: 14 100% 57%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 600;
+  }
+}
+
+@layer utilities {
+  .font-heading {
+    font-family: var(--font-heading);
+  }
+
+  .font-body {
+    font-family: var(--font-body);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.9) 0%, hsl(var(--primary) / 0.7) 100%);
+  }
+
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(14 100% 45%) 100%);
+  }
+}
+
+/* Touch targets & responsiveness for PWA/mobile friendliness */
+@layer base {
+  button, input[type="button"], input[type="submit"], a.button {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Ensure interactive elements have comfortable hit area on small screens */
+  .btn, .button, .icon-button {
+    padding: 10px 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Fluid layout defaults */
+  html, body, #root {
+    height: 100%;
+  }
+
+  /* Make images and media responsive */
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+}
