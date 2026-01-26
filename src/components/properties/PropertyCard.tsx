@@ -10,12 +10,6 @@ interface PropertyCardProps {
 }
 
 export function PropertyCard({ property }: PropertyCardProps) {
-  const statusColors = {
-    available: "bg-primary text-primary-foreground",
-    sold: "bg-destructive text-destructive-foreground",
-    reserved: "bg-warning text-warning-foreground",
-  };
-
   const formatPrice = (price: number | null | undefined, currency: string) => {
     if (price === null || price === undefined || Number.isNaN(Number(price))) return "—";
     return new Intl.NumberFormat("en-US", {
@@ -26,7 +20,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
     }).format(Number(price));
   };
 
-  const status = (property.status || "available") as keyof typeof statusColors;
+  const isSold = !!property.is_sold;
   const sizeSqm = Number((property as any).size_sqm) || 0;
   const locationLabel = property.location || "Location TBD";
   const titleLabel = property.title || "Untitled Property";
@@ -52,13 +46,34 @@ export function PropertyCard({ property }: PropertyCardProps) {
           alt={titleLabel}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
+
+        {isSold ? (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-[140%] -rotate-12">
+              <div className="relative bg-shammah-green/90 py-3 md:py-4">
+                <div className="absolute left-0 right-0 top-0 h-[2px] bg-shammah-orange" />
+                <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-shammah-orange" />
+                <div
+                  className="text-center text-4xl md:text-5xl font-extrabold tracking-[0.2em] text-red-600"
+                  style={{ WebkitTextStroke: "1px white" }}
+                >
+                  SOLD
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {!isSold ? (
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-primary text-primary-foreground">Available</Badge>
+          </div>
+        ) : null}
+
         <div className="absolute top-3 left-3 flex gap-2">
           {property.is_titled && (
             <Badge className="bg-shammah-green text-white">Titled</Badge>
           )}
-          <Badge className={statusColors[status] || statusColors.available}>
-            {String(status).toUpperCase()}
-          </Badge>
         </div>
       </div>
 
@@ -94,7 +109,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
             </Button>
           </Link>
           <a
-            href={`https://wa.me/260979171520?text=${encodeURIComponent(
+            href={`https://wa.me/260975705555?text=${encodeURIComponent(
               `Hi Shammah, I am interested in a Virtual Tour for the property: ${titleLabel} in ${locationLabel}. Can you send me the video or more details?`
             )}`}
             target="_blank"

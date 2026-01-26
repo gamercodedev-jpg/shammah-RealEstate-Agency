@@ -1,6 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Plot, PropertyFilters } from "@/types/database";
+import { useEffect } from "react";
+
+export function usePlotsRealtime() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("plots-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "plots" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["plots"], exact: false });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch {
+        // ignore
+      }
+    };
+  }, [queryClient]);
+}
 
 export function usePlots(filters?: PropertyFilters) {
   return useQuery({

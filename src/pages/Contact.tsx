@@ -59,15 +59,15 @@ export default function Contact() {
               <div className="space-y-3">
                 <div>
                   <div className="text-sm font-medium">Phone</div>
-                  <a href="tel:+260979171520" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">0979171520</a>
+                  <a href="tel:0975705555" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">0975705555</a>
                 </div>
                 <div>
                   <div className="text-sm font-medium">WhatsApp</div>
-                  <a href="https://wa.me/260979171520" target="_blank" rel="noopener noreferrer" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">Message on WhatsApp</a>
+                  <a href="https://wa.me/260975705555" target="_blank" rel="noopener noreferrer" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">+260 975705555 (WhatsApp)</a>
                 </div>
                 <div>
                   <div className="text-sm font-medium">Email</div>
-                  <a href="mailto:Mthunzilabs@gmail.com" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">Mthunzilabs@gmail.com</a>
+                  <a href="mailto:alexkabinga83@gmail.com" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">alexkabinga83@gmail.com</a>
                 </div>
               </div>
             </div>

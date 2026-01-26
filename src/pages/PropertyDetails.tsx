@@ -134,8 +134,25 @@ export default function PropertyDetails() {
               {/* Main */}
               <div className="lg:col-span-8">
                 {/* Hero image */}
-                <div className="overflow-hidden rounded-xl border bg-card">
+                <div className="relative overflow-hidden rounded-2xl border bg-card">
                   <img src={heroImage} alt={title} className="w-full aspect-[16/9] object-cover" />
+
+                  {(plot as any)?.is_sold ? (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-[140%] -rotate-12">
+                        <div className="relative bg-shammah-green/90 py-3 md:py-4">
+                          <div className="absolute left-0 right-0 top-0 h-[2px] bg-shammah-orange" />
+                          <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-shammah-orange" />
+                          <div
+                            className="text-center text-4xl md:text-5xl font-extrabold tracking-[0.2em] text-red-600"
+                            style={{ WebkitTextStroke: "1px white" }}
+                          >
+                            SOLD
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Gallery */}
@@ -181,7 +198,7 @@ export default function PropertyDetails() {
                     <CardContent className="space-y-3">
                       <a
                         href={whatsappUrl(
-                          "260979171520",
+                          "260975705555",
                           `Hi, I'm interested in ${title}. Can you share more details?`
                         )}
                         target="_blank"
@@ -196,7 +213,7 @@ export default function PropertyDetails() {
 
                       <a
                         href={whatsappUrl(
-                          "260979171520",
+                          "260975705555",
                           `Hi Shammah, I am interested in a Virtual Tour for the property: ${title} in ${location || "Unknown location"}. Can you send me the video or more details?`
                         )}
                         target="_blank"
@@ -211,7 +228,7 @@ export default function PropertyDetails() {
 
                       <a
                         href={whatsappUrl(
-                          "260979171520",
+                          "260975705555",
                           `Hi, I'd like to request a site visit for ${title}. When can we schedule?`
                         )}
                         target="_blank"
@@ -226,7 +243,7 @@ export default function PropertyDetails() {
 
                       <a
                         href={whatsappUrl(
-                          "260979171520",
+                          "260975705555",
                           `Hi, do you have payment plans/installments for ${title}?`
                         )}
                         target="_blank"

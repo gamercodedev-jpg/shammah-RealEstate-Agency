@@ -66,7 +66,7 @@ export function DiasporaSection() {
                 </Button>
               </Link>
               <a
-                href={`https://wa.me/260979171520?text=${encodeURIComponent(
+                href={`https://wa.me/260975705555?text=${encodeURIComponent(
                   "Hi Shammah, I am interested in a Virtual Tour. Can you share available properties and a short video tour or more details?"
                 )}`}
                 target="_blank"

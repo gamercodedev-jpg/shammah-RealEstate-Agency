@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 const BUCKET_NAME = "shammah-media";
 
@@ -24,6 +25,7 @@ export default function Admin() {
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"plots" | "news">("plots");
+  const [soldUpdatingId, setSoldUpdatingId] = useState<string | null>(null);
 
   // Form State
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
@@ -210,6 +212,21 @@ export default function Admin() {
     fetchAll();
   };
 
+  const handleToggleSold = async (plotId: string, isSold: boolean) => {
+    setSoldUpdatingId(plotId);
+    const previous = plots;
+    setPlots((curr) => curr.map((p) => (p.id === plotId ? ({ ...p, is_sold: isSold } as Plot) : p)));
+    try {
+      const { error } = await supabase.from("plots").update({ is_sold: isSold } as any).eq("id", plotId);
+      if (error) throw error;
+    } catch (err: any) {
+      setPlots(previous);
+      toast({ title: "Error", description: err?.message || "Failed to update sold status", variant: "destructive" });
+    } finally {
+      setSoldUpdatingId(null);
+    }
+  };
+
   return (
     <Layout>
       <div className="relative">
@@ -241,11 +258,24 @@ export default function Admin() {
 
             <div className="border rounded-xl bg-white overflow-hidden">
               <Table>
-                <TableHeader><TableRow><TableHead>Title</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Sold</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <TableBody>
                   {plots.map(p => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.title}</TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={!!(p as any).is_sold}
+                          onCheckedChange={(checked) => handleToggleSold(p.id, checked)}
+                          disabled={soldUpdatingId === p.id}
+                        />
+                      </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button size="sm" variant="outline" onClick={() => { setEditingPlot(p); setTitle(p.title); setLocation(p.location || ""); setPriceZmw(p.price_zmw || 0); }}>Edit</Button>
                         <Button size="sm" variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>

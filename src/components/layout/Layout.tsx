@@ -3,12 +3,15 @@ import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import GlobalAudio from "@/components/ui/GlobalAudio";
+import { usePlotsRealtime } from "@/hooks/usePlots";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
+  usePlotsRealtime();
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />

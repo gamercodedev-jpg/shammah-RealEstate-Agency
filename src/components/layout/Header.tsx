@@ -12,6 +12,11 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+// Updated to official Shammah Real Estate production contacts per client request
+const PRIMARY_PHONE = "0975705555";
+const SECONDARY_PHONE = "0975717120";
+const SECONDARY_WHATSAPP = "260975705555";
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
@@ -60,13 +65,22 @@ export function Header() {
 
         <div className="hidden md:flex items-center gap-4">
           <a
-            href="https://wa.me/260979171520"
+            href={`https://wa.me/${SECONDARY_WHATSAPP}`}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label={`WhatsApp ${SECONDARY_PHONE}`}
             className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
           >
             <Phone className="h-4 w-4" />
             WhatsApp
+          </a>
+
+          <a
+            href={`tel:${PRIMARY_PHONE}`}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
+          >
+            <Phone className="h-4 w-4" />
+            Call Us
           </a>
         </div>
 
@@ -99,13 +113,19 @@ export function Header() {
               </Link>
             ))}
             <a
-              href="https://wa.me/260979171520"
+              href={`https://wa.me/${SECONDARY_WHATSAPP}`}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`WhatsApp ${SECONDARY_PHONE}`}
               className="flex items-center gap-2 text-sm font-medium text-primary"
             >
               <Phone className="h-4 w-4" />
               WhatsApp Us
+            </a>
+
+            <a href={`tel:${PRIMARY_PHONE}`} className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Phone className="h-4 w-4" />
+              Call Us
             </a>
             {/* Admin access hidden — use logo 5x tap to open */}
           </nav>

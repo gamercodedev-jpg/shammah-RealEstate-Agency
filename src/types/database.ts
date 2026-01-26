@@ -7,6 +7,7 @@ export interface Plot {
   price_zmw: number;
   price_usd: number;
   status: 'available' | 'sold' | 'reserved';
+  is_sold?: boolean | null;
   is_titled: boolean;
   has_road_access: boolean | null;
   has_water: boolean | null;
