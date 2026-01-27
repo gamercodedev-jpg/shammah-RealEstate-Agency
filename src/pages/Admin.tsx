@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
+import shamahLogo from "@/assets/shamah-logo.png";
 import { Switch } from "@/components/ui/switch";
 
 const BUCKET_NAME = "shammah-media";
@@ -232,7 +233,8 @@ export default function Admin() {
       <div className="relative">
         <div
           aria-hidden="true"
-          className="absolute inset-0 pointer-events-none opacity-[0.06] bg-[url('/src/assets/shamah-logo.png')] bg-center bg-no-repeat bg-contain"
+          className="absolute inset-0 pointer-events-none opacity-[0.06] bg-center bg-no-repeat bg-contain"
+          style={{ backgroundImage: `url(${shamahLogo})` }}
         />
 
         <div className="container py-10 relative z-10">

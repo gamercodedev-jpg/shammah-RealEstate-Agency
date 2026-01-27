@@ -12,6 +12,8 @@ import Admin from "./pages/Admin";
 import Diaspora from "./pages/Diaspora";
 import News from "./pages/News";
 import NewsDetails from "./pages/NewsDetails";
+import ProjectSolutions from "./pages/ProjectSolutions";
+import BuildingJourney from "./pages/BuildingJourney";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -31,6 +33,8 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/diaspora" element={<Diaspora />} />
+            <Route path="/solutions" element={<ProjectSolutions />} />
+            <Route path="/building-journey" element={<BuildingJourney />} />
             <Route path="/news" element={<News />} />
             <Route path="/news/:id" element={<NewsDetails />} />
             <Route path="/properties" element={<Properties />} />

@@ -11,8 +11,8 @@
 @tailwind utilities;
 
 /* Shammah Real Estate Design System
-   Zambian Flag-Inspired: Forest Green (#2C9143) and Bold Orange (#FF5722)
-   All colors in HSL format
+  Brand palette: Forest Green + Shammah Gold
+  All colors in HSL format
 */
 
 @layer base {
@@ -37,8 +37,8 @@
     --muted: 210 20% 96%;
     --muted-foreground: 210 11% 45%;
 
-    /* Bold Orange - Accent/CTA color */
-    --accent: 14 100% 57%;
+    /* Shammah Gold - Accent/CTA color */
+    --accent: 41 84% 38%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
@@ -58,7 +58,7 @@
     --sidebar-accent: 138 40% 25%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 138 40% 30%;
-    --sidebar-ring: 14 100% 57%;
+    --sidebar-ring: 41 84% 38%;
 
     /* Custom tokens */
     --success: 138 53% 36%;
@@ -90,7 +90,7 @@
     --muted: 210 15% 18%;
     --muted-foreground: 210 10% 60%;
 
-    --accent: 14 100% 57%;
+    --accent: 41 86% 55%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62% 45%;
@@ -107,7 +107,7 @@
     --sidebar-accent: 210 15% 15%;
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 210 15% 20%;
-    --sidebar-ring: 14 100% 57%;
+    --sidebar-ring: 41 86% 55%;
   }
 }
 
@@ -145,7 +145,7 @@
   }
 
   .bg-gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(14 100% 45%) 100%);
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(41 84% 30%) 100%);
   }
 }
 

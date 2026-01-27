@@ -3,7 +3,8 @@ import { Layout } from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import { publicStorageUrl } from "@/integrations/supabase/utils";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowUpRight, PlayCircle } from "lucide-react";
 
 import { playGlobalAudio } from "@/hooks/use-global-audio";
 export default function News() {
@@ -11,6 +12,7 @@ export default function News() {
   const [error, setError] = useState<string | null>(null);
   const adminEndpoint = import.meta.env.VITE_ADMIN_INSERT_ENDPOINT as string | undefined;
   const useAdminReads = (import.meta.env.VITE_USE_ADMIN_ENDPOINT_FOR_READS as string | undefined) === "true";
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -74,7 +76,11 @@ export default function News() {
         {featured && (
           <article className="mb-8 rounded overflow-hidden relative">
             <Link to={`/news/${featured.id}`} className="block">
-              <img src={publicStorageUrl(featured.image_url || '') || '/src/assets/placeholder.jpg'} alt={featured.title} className="w-full h-72 object-cover" />
+              <img
+                src={publicStorageUrl(featured.image_url || "") || featured.image_url || "/placeholder.svg"}
+                alt={featured.title}
+                className="w-full h-72 object-cover"
+              />
             </Link>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
               <div>
@@ -88,50 +94,82 @@ export default function News() {
           </article>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {rest.map((f) => (
-            <article key={f.id} className="bg-card rounded overflow-hidden transform transition hover:scale-105">
-            <div key={f.id} className="bg-card border border-border rounded-lg p-4 hover:shadow-md transition">
-              {f.video_url && (
-                <div className="mb-3">
-                  <video src={publicStorageUrl(f.video_url) || f.video_url} controls className="w-full rounded-lg bg-black" />
-                </div>
-              )}
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h4 className="font-semibold text-sm line-clamp-1">{f.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-1">{new Date(f.created_at).toLocaleDateString()}</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className={`text-xs px-2 py-1 rounded ${f.is_published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                      {f.is_published ? 'Published' : 'Draft'}
+            (() => {
+              const coverSrc = publicStorageUrl(f.image_url || "") || f.image_url || "/placeholder.svg";
+              const isPublished = f.is_published === true || f.is_published === null;
+              const createdAt = f.created_at ? new Date(f.created_at).toLocaleDateString() : "";
+              return (
+            <article
+              key={f.id}
+              role="link"
+              tabIndex={0}
+              onClick={() => navigate(`/news/${f.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") navigate(`/news/${f.id}`);
+              }}
+              aria-label={`Open news: ${f.title ?? ""}`}
+              className="group relative overflow-hidden rounded-xl bg-card border border-border shadow-sm transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <div className="relative">
+                <img src={coverSrc} alt={f.title || "News"} className="h-40 w-full object-cover" />
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full backdrop-blur border ${
+                      isPublished
+                        ? "bg-green-500/10 text-green-200 border-green-500/30"
+                        : "bg-yellow-500/10 text-yellow-200 border-yellow-500/30"
+                    }`}
+                  >
+                    {isPublished ? "Published" : "Draft"}
+                  </span>
+                  {f.video_url ? (
+                    <span className="text-xs px-2 py-1 rounded-full bg-black/40 text-white border border-white/20">
+                      <span className="inline-flex items-center gap-1">
+                        <PlayCircle className="h-3.5 w-3.5" /> Video
+                      </span>
                     </span>
-                  </div>
-                  {f.audio_url && (
-                    <div className="mt-3 p-3 bg-white/60 backdrop-blur rounded flex items-center justify-between">
-                      <div className="text-sm">Now Playing: Estate Tour Theme</div>
-                      <div>
-                        <Button size="sm" onClick={() => playGlobalAudio(publicStorageUrl(f.audio_url) || f.audio_url)}>Play</Button>
-                      </div>
-                    </div>
-                  )}
+                  ) : null}
                 </div>
-                
+
+                <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-black/40 text-white border border-white/20">
+                    Open <ArrowUpRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
               </div>
-            </div>
+
               <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">Market News</div>
-                  <div className="text-xs text-muted-foreground">{new Date(f.created_at).toLocaleDateString()}</div>
-                </div>
-                <h3 className="font-semibold mt-2">{f.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{f.content?.slice(0,100)}...</p>
-                <div className="mt-4 flex justify-end">
-                  <Link to={`/news/${f.id}`}>
-                    <Button size="sm" className="bg-[color:var(--accent)]">Read More</Button>
-                  </Link>
-                </div>
+                <h4 className="font-semibold leading-snug line-clamp-1">{f.title}</h4>
+                <p className="text-xs text-muted-foreground mt-1">{createdAt}</p>
+
+                {f.content ? (
+                  <p className="mt-3 text-sm text-muted-foreground line-clamp-3">{String(f.content)}</p>
+                ) : null}
+
+                {f.audio_url && (
+                  <div
+                    className="mt-4 p-3 rounded-lg bg-muted/40 flex items-center justify-between gap-3"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-sm">Now Playing: Estate Tour Theme</div>
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        playGlobalAudio(publicStorageUrl(f.audio_url) || f.audio_url);
+                      }}
+                    >
+                      Play
+                    </Button>
+                  </div>
+                )}
               </div>
             </article>
+              );
+            })()
           ))}
         </div>
 

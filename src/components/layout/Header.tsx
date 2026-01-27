@@ -1,7 +1,15 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Phone } from "lucide-react";
+import { Menu, X, Phone, ChevronDown, Building2, HardHat, Landmark, Sparkles, Video } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import shamahLogo from "@/assets/shamah-logo.png";
 
 const navLinks = [
@@ -12,6 +20,26 @@ const navLinks = [
   { href: "/contact", label: "Contact" },
 ];
 
+const serviceSections = {
+  core: [
+    { href: "/properties", label: "Land Sales", icon: Landmark },
+    { href: "/contact", label: "Title Processing", icon: Sparkles },
+    { href: "/diaspora", label: "Virtual Property Tours", icon: Video },
+    { href: "/contact", label: "Investment Advisory", icon: Building2 },
+  ],
+  solutions: [
+    { href: "/solutions", label: "Project Solutions", icon: Sparkles },
+    { href: "/building-journey", label: "Plans Form", icon: Sparkles },
+  ],
+  construction: [
+    { href: "/solutions", label: "Tiling", icon: HardHat },
+    { href: "/solutions", label: "Wiring", icon: HardHat },
+    { href: "/solutions", label: "Plumbing", icon: HardHat },
+    { href: "/solutions", label: "Plastering", icon: HardHat },
+    { href: "/solutions", label: "Landscaping", icon: HardHat },
+  ],
+} as const;
+
 // Updated to official Shammah Real Estate production contacts per client request
 const PRIMARY_PHONE = "0975705555";
 const SECONDARY_PHONE = "0975717120";
@@ -19,6 +47,7 @@ const SECONDARY_WHATSAPP = "260975705555";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -61,6 +90,78 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto px-0 py-0 text-sm font-medium text-muted-foreground hover:bg-transparent hover:text-primary"
+              >
+                Services <ChevronDown className="ml-1 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="start"
+              className="w-[360px] p-2 max-h-[70vh] overflow-y-auto"
+            >
+              <DropdownMenuLabel className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Core services
+              </DropdownMenuLabel>
+              <div className="grid grid-cols-2 gap-1 p-1">
+                {serviceSections.core.map((s) => (
+                  <DropdownMenuItem
+                    key={s.label}
+                    asChild
+                    className="cursor-pointer"
+                  >
+                    <Link to={s.href} className="flex items-center gap-2">
+                      <s.icon className="h-4 w-4 text-primary" />
+                      <span className="truncate">{s.label}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Solutions
+              </DropdownMenuLabel>
+              <div className="grid grid-cols-2 gap-1 p-1">
+                {serviceSections.solutions.map((s) => (
+                  <DropdownMenuItem
+                    key={s.label}
+                    asChild
+                    className="cursor-pointer"
+                  >
+                    <Link to={s.href} className="flex items-center gap-2">
+                      <s.icon className="h-4 w-4 text-accent" />
+                      <span className="truncate">{s.label}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Construction
+              </DropdownMenuLabel>
+              <div className="grid grid-cols-2 gap-1 p-1">
+                {serviceSections.construction.map((s) => (
+                  <DropdownMenuItem
+                    key={s.label}
+                    asChild
+                    className="cursor-pointer"
+                  >
+                    <Link to={s.href} className="flex items-center gap-2">
+                      <s.icon className="h-4 w-4 text-primary" />
+                      <span className="truncate">{s.label}</span>
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         <div className="hidden md:flex items-center gap-4">
@@ -112,6 +213,72 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+
+            <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
+              <button
+                type="button"
+                onClick={() => setIsMobileServicesOpen((v) => !v)}
+                className="w-full flex items-center justify-between text-sm font-semibold text-foreground"
+                aria-expanded={isMobileServicesOpen}
+              >
+                Services
+                <ChevronDown className={`h-4 w-4 transition-transform ${isMobileServicesOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {serviceSections.core.map((s) => (
+                  <Link
+                    key={s.label}
+                    to={s.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {s.label}
+                  </Link>
+                ))}
+              </div>
+
+              {isMobileServicesOpen ? (
+                <>
+                  <div className="mt-3 pt-3 border-t border-border/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Solutions</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {serviceSections.solutions.map((s) => (
+                        <Link
+                          key={s.label}
+                          to={s.href}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          {s.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-border/60">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">Construction</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {serviceSections.construction.map((s) => (
+                        <Link
+                          key={s.label}
+                          to={s.href}
+                          onClick={() => setIsMenuOpen(false)}
+                          className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          {s.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="mt-3 text-xs text-muted-foreground">
+                  More: <Link to="/solutions" onClick={() => setIsMenuOpen(false)} className="underline underline-offset-4">Project Solutions</Link>
+                </div>
+              )}
+            </div>
+
             <a
               href={`https://wa.me/${SECONDARY_WHATSAPP}`}
               target="_blank"

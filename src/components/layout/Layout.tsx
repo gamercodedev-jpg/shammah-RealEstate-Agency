@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { AccreditationTrust } from "./AccreditationTrust";
 import { InstallPrompt } from "@/components/ui/InstallPrompt";
 import GlobalAudio from "@/components/ui/GlobalAudio";
 import { usePlotsRealtime } from "@/hooks/usePlots";
@@ -17,6 +18,7 @@ export function Layout({ children }: LayoutProps) {
       <Header />
       <main className="flex-1">{children}</main>
       <GlobalAudio />
+      <AccreditationTrust />
       <Footer />
       <InstallPrompt />
     </div>

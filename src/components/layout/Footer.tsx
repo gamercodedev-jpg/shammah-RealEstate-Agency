@@ -2,17 +2,36 @@ import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
 import shamahLogo from "@/assets/shamah-logo.png";
 
+const CONTACT = {
+  whatsappInternational: "260975705555",
+  email: "alexkabinga83@gmail.com",
+  phoneTel: "0975705555",
+} as const;
+
+function buildWhatsAppUrl(text: string) {
+  return `https://wa.me/${CONTACT.whatsappInternational}?text=${encodeURIComponent(text)}`;
+}
+
 export function Footer() {
   return (
     <footer className="bg-primary text-primary-foreground">
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand */}
+          {/* Column 1: Identity */}
           <div className="space-y-4">
-            <img src={shamahLogo} alt="Shammah Real Estate Agency Limited" className="h-12 w-auto brightness-0 invert" />
-            <p className="text-sm text-primary-foreground/80">
-              Your trusted partner for land investment in Zambia. Building legacies for generations.
+            <div className="inline-flex w-full max-w-[320px] flex-col items-center justify-center rounded-xl bg-white/95 p-4 shadow-sm">
+              <img
+                src={shamahLogo}
+                alt="Shammah Real Estate Agency Limited"
+                className="h-12 w-auto object-contain"
+                loading="lazy"
+              />
+            </div>
+
+            <p className="text-sm text-primary-foreground/80 leading-relaxed">
+              Your trusted partner for land investment in Zambia — with professional real estate delivery and reliable construction support.
             </p>
+
             <div className="flex gap-4">
               <a href="#" className="hover:text-accent transition-colors" aria-label="Facebook">
                 <Facebook className="h-5 w-5" />
@@ -24,67 +43,132 @@ export function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
             </div>
-          </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/properties" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
-                  Browse Properties
-                </Link>
-              </li>
-              <li>
-                <Link to="/diaspora" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
-                  Diaspora Investment
-                </Link>
-              </li>
-              <li>
-                <Link to="/news" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
-                  News & Updates
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
-                  Contact Us
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Services */}
-          <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">Services</h4>
-            <ul className="space-y-2">
-              <li className="text-sm text-primary-foreground/80">Land Sales</li>
-              <li className="text-sm text-primary-foreground/80">Title Processing</li>
-              <li className="text-sm text-primary-foreground/80">Virtual Property Tours</li>
-              <li className="text-sm text-primary-foreground/80">Investment Advisory</li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div>
-            <h4 className="font-heading font-semibold text-lg mb-4">Contact Us</h4>
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 mt-0.5 text-accent" />
-                <span className="text-sm text-primary-foreground/80">
-                  Lusaka, Zambia
-                </span>
+                <span className="text-sm text-primary-foreground/80">Lusaka, Zambia</span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-accent" />
-                <a href="tel:0975705555" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
-                  0975705555
+                <a
+                  href={`tel:${CONTACT.phoneTel}`}
+                  className="text-sm text-primary-foreground/80 hover:text-accent transition-colors"
+                >
+                  {CONTACT.phoneTel}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-accent" />
-                <a href="mailto:alexkabinga83@gmail.com" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
-                  alexkabinga83@gmail.com
+                <a
+                  href={`mailto:${CONTACT.email}`}
+                  className="text-sm text-primary-foreground/80 hover:text-accent transition-colors"
+                >
+                  {CONTACT.email}
                 </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 2: Real Estate */}
+          <div>
+            <h4 className="font-heading font-semibold text-lg mb-4">Real Estate</h4>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/properties" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Land Sales
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Title Processing
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Property Management
+                </Link>
+              </li>
+            </ul>
+
+            <div className="mt-6">
+              <h4 className="font-heading font-semibold text-lg mb-4">Quick Links</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/diaspora" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                    Diaspora Investment
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/news" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                    News & Updates
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/solutions" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                    Project Solutions
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Column 3: Construction */}
+          <div>
+            <h4 className="font-heading font-semibold text-lg mb-4">Construction</h4>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/solutions" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Turnkey Building
+                </Link>
+              </li>
+              <li>
+                <Link to="/solutions" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Tiling &amp; Finishing
+                </Link>
+              </li>
+              <li>
+                <Link to="/solutions" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Electrical &amp; Plumbing
+                </Link>
+              </li>
+              <li>
+                <Link to="/solutions" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Landscaping
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Finance */}
+          <div>
+            <h4 className="font-heading font-semibold text-lg mb-4">Building Materials</h4>
+            <ul className="space-y-2">
+              <li>
+                <a
+                  href={buildWhatsAppUrl(
+                    [
+                      "Hello Shamah Horizon,",
+                      "I would like to open a Hardware Supply Account (pay in installments) for building materials.",
+                      "Please share the requirements, payment options, and next steps.",
+                    ].join("\n"),
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary-foreground/80 hover:text-accent transition-colors"
+                >
+                  Hardware Supply Accounts (Pay in Installments)
+                </a>
+              </li>
+              <li>
+                <Link to="/building-journey" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Start a Plan / Request a Quote
+                </Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-sm text-primary-foreground/80 hover:text-accent transition-colors">
+                  Talk to Us
+                </Link>
               </li>
             </ul>
           </div>

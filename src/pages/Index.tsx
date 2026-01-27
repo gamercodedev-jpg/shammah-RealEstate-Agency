@@ -5,6 +5,7 @@ import { FeaturedProperties } from "@/components/home/FeaturedProperties";
 import { WhyShamah } from "@/components/home/WhyShamah";
 import { DiasporaSection } from "@/components/home/DiasporaSection";
 import NewsSection from "@/components/home/NewsSection";
+import { ServicesEcosystemSection } from "@/components/home/ServicesEcosystemSection";
 
 const Index = () => {
   return (
@@ -14,6 +15,7 @@ const Index = () => {
       <FeaturedProperties />
       <WhyShamah />
       <DiasporaSection />
+      <ServicesEcosystemSection />
       <NewsSection />
     </Layout>
   );
