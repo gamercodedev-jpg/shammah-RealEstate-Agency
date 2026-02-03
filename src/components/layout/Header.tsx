@@ -10,7 +10,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import shamahLogo from "@/assets/shamah-logo.png";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -54,7 +53,7 @@ export function Header() {
   const tapTimesRef = useRef<number[]>([]);
 
   function getMasterKey() {
-    return window.localStorage.getItem("shamah_key") || "shamah2026";
+    return window.localStorage.getItem("shamah_key") || "Shammah2026";
   }
 
   const handleLogoClick = () => {
@@ -86,7 +85,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <button onClick={handleLogoClick} aria-label="Logo" className="flex items-center gap-2 bg-transparent border-0 p-0">
-          <img src={shamahLogo} alt="shamah Real Estate Agency Limited" className="h-10 w-auto" />
+          <img src="/shamah-logo.png" alt="shamah Real Estate Agency Limited" className="h-10 w-auto" />
         </button>
 
         {/* Desktop Navigation */}

@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
-import shamahLogo from "@/assets/shamah-logo.png";
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 
 const BUCKET_NAME = "shamah-media";
+const SHAMAH_LOGO_URL = "/shamah-logo.png";
 
 function uniqueFilePath(file: File) {
   return `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
@@ -51,7 +51,7 @@ export default function Admin() {
   const [feedAudioFile, setFeedAudioFile] = useState<File | null>(null);
 
   function getMasterKey() {
-    return window.localStorage.getItem("shamah_key") || "shamah2026";
+    return window.localStorage.getItem("shamah_key") || "Shammah2026";
   }
 
   function ensureAdminAuthorized() {
@@ -294,7 +294,7 @@ export default function Admin() {
         <div
           aria-hidden="true"
           className="absolute inset-0 pointer-events-none opacity-[0.06] bg-center bg-no-repeat bg-contain"
-          style={{ backgroundImage: `url(${shamahLogo})` }}
+          style={{ backgroundImage: `url(${SHAMAH_LOGO_URL})` }}
         />
 
         <div className="container py-10 relative z-10">

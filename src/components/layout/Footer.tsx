@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
-import shamahLogo from "@/assets/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shamah-logo.png";
 
 const CONTACT = {
   whatsappInternational: "260975705555",
@@ -21,7 +21,7 @@ export function Footer() {
           <div className="space-y-4">
             <div className="inline-flex w-full max-w-[320px] flex-col items-center justify-center rounded-xl bg-white/95 p-4 shadow-sm">
               <img
-                src={shamahLogo}
+                src={SHAMAH_LOGO_URL}
                 alt="shamah Real Estate Agency Limited"
                 className="h-12 w-auto object-contain"
                 loading="lazy"

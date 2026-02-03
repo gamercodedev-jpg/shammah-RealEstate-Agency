@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ToastAction } from "@/components/ui/toast";
 import { ArrowRight, CheckCircle2, Phone, Sparkles } from "lucide-react";
-import shamahLogo from "@/assets/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shamah-logo.png";
 
 const CONTACT = {
   phoneDisplay: "0975705555",
@@ -165,7 +165,7 @@ export default function BuildingJourney() {
         <div
           aria-hidden="true"
           className="absolute inset-0 -z-10 pointer-events-none opacity-[0.03] bg-center bg-no-repeat bg-contain"
-          style={{ backgroundImage: `url(${shamahLogo})` }}
+          style={{ backgroundImage: `url(${SHAMAH_LOGO_URL})` }}
         />
 
         <div className="container py-10 lg:py-14">

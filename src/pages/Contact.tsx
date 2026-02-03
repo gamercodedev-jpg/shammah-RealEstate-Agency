@@ -165,10 +165,10 @@ export default function Contact() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 -z-10 bg-gradient-to-b from-primary/10 via-background to-background" />
         
-        {/* FIXED LOGO PATH - Use /shammah-logo.png from public folder */}
+        {/* FIXED LOGO PATH - Use /shamah-logo.png from public folder */}
         <div
           className="absolute inset-0 -z-10 pointer-events-none opacity-[0.025] bg-center bg-no-repeat bg-contain"
-          style={{ backgroundImage: "url('/shammah-logo.png')" }}
+          style={{ backgroundImage: "url('/shamah-logo.png')" }}
         />
 
         <div className="container py-14 relative z-10">

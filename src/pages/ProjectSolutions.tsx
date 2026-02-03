@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Cable, LayoutGrid, PaintRoller, Shovel, Wrench } from "lucide-react";
-import shamahLogo from "@/assets/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shamah-logo.png";
 
 const WHATSAPP_INTL = "260975705555";
 
@@ -52,7 +52,7 @@ export default function ProjectSolutions() {
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none opacity-[0.05] bg-center bg-no-repeat bg-contain"
-          style={{ backgroundImage: `url(${shamahLogo})` }}
+          style={{ backgroundImage: `url(${SHAMAH_LOGO_URL})` }}
         />
 
         <div className="container py-14 relative z-10">

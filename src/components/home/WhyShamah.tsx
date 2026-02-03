@@ -39,7 +39,7 @@ const features = [
   },
 ];
 
-export function Whyshamah() {
+export function WhyShammah() {
   return (
     <section className="py-16 bg-secondary">
       <div className="container">
