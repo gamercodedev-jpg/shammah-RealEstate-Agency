@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
-const SHAMAH_LOGO_URL = "/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
 const CONTACT = {
   whatsappInternational: "260975705555",

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Plot } from "@/types/database";
+import publicStorageUrl from "@/integrations/supabase/utils";
 
 interface PropertyCardProps {
   property: Plot;
@@ -25,18 +26,15 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const locationLabel = property.location || "Location TBD";
   const titleLabel = property.title || "Untitled Property";
 
-  // Builds the direct URL for your specific Supabase project.
-  // Supports either full URLs or filenames stored in the images[] array.
-  const STORAGE_PREFIX =
-    "https://whpycgzxznjklrnofsri.supabase.co/storage/v1/object/public/shamah-media/";
-
   const firstImage = property.images?.[0];
+  const resolvedImage =
+    typeof firstImage === "string" && firstImage.trim()
+      ? publicStorageUrl(firstImage.trim())
+      : undefined;
+
   const mainImage =
-    (typeof firstImage === "string" && /^https?:\/\//i.test(firstImage)
-      ? firstImage
-      : typeof firstImage === "string" && firstImage.trim()
-        ? `${STORAGE_PREFIX}${encodeURI(firstImage.replace(/^\/+/, ""))}`
-        : "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800");
+    resolvedImage ||
+    "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800";
 
   return (
     <Card className="group overflow-hidden hover:shadow-lg transition-shadow border-none shadow-md">

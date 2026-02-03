@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Cable, LayoutGrid, PaintRoller, Shovel, Wrench } from "lucide-react";
-const SHAMAH_LOGO_URL = "/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
 const WHATSAPP_INTL = "260975705555";
 

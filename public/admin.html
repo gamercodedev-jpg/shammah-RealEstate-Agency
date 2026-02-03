@@ -9,10 +9,10 @@
     <script>
       (function () {
         var DEFAULT_KEY = "Shammah2026";
-        var key = localStorage.getItem("shamah_key") || DEFAULT_KEY;
+        var key = localStorage.getItem("shammah_key") || DEFAULT_KEY;
 
         // If we already authenticated this tab/session, skip reprompt.
-        var authed = sessionStorage.getItem("shamah_admin_authed") === "1";
+        var authed = sessionStorage.getItem("shammah_admin_authed") === "1";
 
         if (!authed) {
           var input = prompt("Master Access Key");
@@ -21,7 +21,7 @@
             window.location.replace("/");
             return;
           }
-          sessionStorage.setItem("shamah_admin_authed", "1");
+          sessionStorage.setItem("shammah_admin_authed", "1");
         }
 
         // Your admin panel is the React route at /admin

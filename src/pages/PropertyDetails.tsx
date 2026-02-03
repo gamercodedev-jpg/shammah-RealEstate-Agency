@@ -9,9 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-
-const STORAGE_PREFIX =
-  "https://whpycgzxznjklrnofsri.supabase.co/storage/v1/object/public/shamah-media/";
+import publicStorageUrl from "@/integrations/supabase/utils";
 
 function formatPriceZmw(price: unknown) {
   const n = Number(price);
@@ -27,11 +25,7 @@ function formatPriceZmw(price: unknown) {
 function resolveImageSrc(value: unknown) {
   const raw = typeof value === "string" ? value.trim() : "";
   if (!raw) return undefined;
-  if (/^https?:\/\//i.test(raw)) return raw;
-
-  const cleaned = raw.replace(/^\/+/, "");
-  // Keep slashes, encode unsafe characters.
-  return `${STORAGE_PREFIX}${encodeURI(cleaned)}`;
+  return publicStorageUrl(raw) || undefined;
 }
 
 function whatsappUrl(phone: string, text: string) {

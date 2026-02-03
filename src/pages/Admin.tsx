@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 
 const BUCKET_NAME = "shamah-media";
-const SHAMAH_LOGO_URL = "/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
 function uniqueFilePath(file: File) {
   return `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
@@ -51,11 +51,11 @@ export default function Admin() {
   const [feedAudioFile, setFeedAudioFile] = useState<File | null>(null);
 
   function getMasterKey() {
-    return window.localStorage.getItem("shamah_key") || "Shammah2026";
+    return window.localStorage.getItem("shammah_key") || "Shammah2026";
   }
 
   function ensureAdminAuthorized() {
-    if (window.sessionStorage.getItem("shamah_admin_authed") === "1") return true;
+    if (window.sessionStorage.getItem("shammah_admin_authed") === "1") return true;
 
     const input = window.prompt("Master Access Key");
     const key = getMasterKey();
@@ -65,7 +65,7 @@ export default function Admin() {
       return false;
     }
 
-    window.sessionStorage.setItem("shamah_admin_authed", "1");
+    window.sessionStorage.setItem("shammah_admin_authed", "1");
     return true;
   }
 
@@ -95,7 +95,7 @@ export default function Admin() {
       return;
     }
 
-    window.localStorage.setItem("shamah_key", next);
+    window.localStorage.setItem("shammah_key", next);
     window.alert("Password updated successfully");
   }
 

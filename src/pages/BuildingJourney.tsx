@@ -13,7 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { ToastAction } from "@/components/ui/toast";
 import { ArrowRight, CheckCircle2, Phone, Sparkles } from "lucide-react";
-const SHAMAH_LOGO_URL = "/shamah-logo.png";
+const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
 const CONTACT = {
   phoneDisplay: "0975705555",
