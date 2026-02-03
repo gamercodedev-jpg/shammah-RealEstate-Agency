@@ -53,9 +53,9 @@ Serverless endpoint usage (client-side): `admin` requests expect JSON body with 
 
 ## Revenue Strategy (All Under One Roof)
 
-- Client Retention: "By integrating the Material Savings Account, we lock in clients for the long term. Even if they can't build today, they start paying Shammah today."
+- Client Retention: "By integrating the Material Savings Account, we lock in clients for the long term. Even if they can't build today, they start paying shamah today."
 - Diaspora Trust: "The 'Key-in-Hand' model is designed for Zambians abroad. They don't need to send money to relatives; they deal directly with a ZIEA-certified firm."
-- Full-Chain Revenue: "Shammah captures profit from the land sale, the material markups, and the construction labor. The website automates the funnel for all three."
+- Full-Chain Revenue: "shamah captures profit from the land sale, the material markups, and the construction labor. The website automates the funnel for all three."
 
 **Edit a file directly in GitHub**
 

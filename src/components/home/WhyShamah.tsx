@@ -17,7 +17,7 @@ const features = [
     icon: Users,
     title: "Building a Legacy",
     description:
-      "Land is the foundation of generational wealth. Partner with Shammah to secure your family's future and build a lasting legacy for the next generation.",
+      "Land is the foundation of generational wealth. Partner with shamah to secure your family's future and build a lasting legacy for the next generation.",
   },
   {
     icon: FileCheck,
@@ -39,16 +39,16 @@ const features = [
   },
 ];
 
-export function WhyShamah() {
+export function Whyshamah() {
   return (
     <section className="py-16 bg-secondary">
       <div className="container">
         <div className="text-center mb-12">
           <h2 className="font-heading text-3xl font-bold mb-4">
-            Why Choose <span className="text-primary">Shammah</span>?
+            Why Choose <span className="text-primary">shamah</span>?
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            For over a decade, Shammah Real Estate Agency Limited has been the trusted name in Zambian land investment. 
+            For over a decade, shamah Real Estate Agency Limited has been the trusted name in Zambian land investment. 
             Our commitment to integrity and customer success sets us apart.
           </p>
         </div>

@@ -23,7 +23,7 @@ SET public = true
 WHERE id IN (
   'property-images',
   'property-media',
-  'shammah-media'
+  'shamah-media'
 );
 
 -- Grant basic privileges on storage schema tables

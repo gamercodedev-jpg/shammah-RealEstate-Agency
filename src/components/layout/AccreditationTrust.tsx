@@ -24,7 +24,7 @@ export function AccreditationTrust() {
                   A Registered and Regulated Real Estate Firm
                 </h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  Shammah Real Estate is a proud, certified member of the Zambia Institute of Estate Agents (ZIEA). We
+                  shamah Real Estate is a proud, certified member of the Zambia Institute of Estate Agents (ZIEA). We
                   operate under a strict code of conduct to ensure transparency, legal compliance, and total security for
                   our local and Diaspora clients.
                 </p>

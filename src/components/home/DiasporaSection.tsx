@@ -37,7 +37,7 @@ export function DiasporaSection() {
 
             <p className="text-muted-foreground mb-8">
               Whether you're in the UK, USA, South Africa, or anywhere else, 
-              Shammah Real Estate Agency Limited makes it easy for you to invest in prime Zambian land. 
+              shamah Real Estate Agency Limited makes it easy for you to invest in prime Zambian land. 
               Our dedicated diaspora services include virtual property tours, 
               international payment options, and comprehensive investment guidance.
             </p>
@@ -67,7 +67,7 @@ export function DiasporaSection() {
               </Link>
               <a
                 href={`https://wa.me/260975705555?text=${encodeURIComponent(
-                  "Hi Shammah, I am interested in a Virtual Tour. Can you share available properties and a short video tour or more details?"
+                  "Hi shamah, I am interested in a Virtual Tour. Can you share available properties and a short video tour or more details?"
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

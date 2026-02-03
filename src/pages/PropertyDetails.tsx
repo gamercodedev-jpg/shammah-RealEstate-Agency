@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const STORAGE_PREFIX =
-  "https://whpycgzxznjklrnofsri.supabase.co/storage/v1/object/public/shammah-media/";
+  "https://whpycgzxznjklrnofsri.supabase.co/storage/v1/object/public/shamah-media/";
 
 function formatPriceZmw(price: unknown) {
   const n = Number(price);
@@ -140,9 +140,9 @@ export default function PropertyDetails() {
                   {(plot as any)?.is_sold ? (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                       <div className="w-[140%] -rotate-12">
-                        <div className="relative bg-shammah-green/90 py-3 md:py-4">
-                          <div className="absolute left-0 right-0 top-0 h-[2px] bg-shammah-orange" />
-                          <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-shammah-orange" />
+                        <div className="relative bg-shamah-green/90 py-3 md:py-4">
+                          <div className="absolute left-0 right-0 top-0 h-[2px] bg-shamah-orange" />
+                          <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-shamah-orange" />
                           <div
                             className="text-center text-4xl md:text-5xl font-extrabold tracking-[0.2em] text-red-600"
                             style={{ WebkitTextStroke: "1px white" }}
@@ -214,7 +214,7 @@ export default function PropertyDetails() {
                       <a
                         href={whatsappUrl(
                           "260975705555",
-                          `Hi Shammah, I am interested in a Virtual Tour for the property: ${title} in ${location || "Unknown location"}. Can you send me the video or more details?`
+                          `Hi shamah, I am interested in a Virtual Tour for the property: ${title} in ${location || "Unknown location"}. Can you send me the video or more details?`
                         )}
                         target="_blank"
                         rel="noopener noreferrer"

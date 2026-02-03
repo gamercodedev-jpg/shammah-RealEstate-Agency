@@ -104,7 +104,7 @@ export default function Diaspora() {
     const convertedTag = display.amount !== null && display.isConverted ? " (converted)" : "";
 
     const messageLines = [
-      "Hello Shamah Horizon,",
+      "Hello shamah Horizon,",
       `I'm enquiring about: ${title}${location ? ` (${location})` : ""}.`,
       `Preferred currency: ${currency}.`,
       `Listed price: ${price}${convertedTag}.`,

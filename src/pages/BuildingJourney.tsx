@@ -61,7 +61,7 @@ export default function BuildingJourney() {
 
   const enquiryText = useMemo(() => {
     const lines = [
-      "Hello Shamah Horizon,",
+      "Hello shamah Horizon,",
       "I want to start my Building Journey.",
       fullName.trim() ? `Full name: ${fullName.trim()}` : "",
       phone.trim() ? `Phone: ${phone.trim()}` : "",

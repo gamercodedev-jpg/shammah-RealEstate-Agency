@@ -93,7 +93,7 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES
   ('property-images', 'property-images', true),
   ('property-media', 'property-media', true),
-  ('shammah-media', 'shammah-media', true)
+  ('shamah-media', 'shamah-media', true)
 ON CONFLICT (id)
 DO UPDATE SET public = EXCLUDED.public, name = EXCLUDED.name;
 

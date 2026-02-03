@@ -41,8 +41,8 @@ const services = [
 
 export default function ProjectSolutions() {
   const materialAccountText = [
-    "Hello Shamah Horizon,",
-    "I would like to open a Shammah Material Account and pay in installments.",
+    "Hello shamah Horizon,",
+    "I would like to open a shamah Material Account and pay in installments.",
     "Please share the requirements, payment options, and next steps.",
   ].join("\n");
 
@@ -64,7 +64,7 @@ export default function ProjectSolutions() {
               You Choose the Plan, We Hand Over the Keys.
             </h1>
             <p className="mt-4 text-muted-foreground">
-              From finishing services to outdoor works, Shammah helps you move from land to a complete home with trusted
+              From finishing services to outdoor works, shamah helps you move from land to a complete home with trusted
               workmanship and clear delivery.
             </p>
             <div className="mt-6 flex items-center justify-center gap-3">
@@ -108,7 +108,7 @@ export default function ProjectSolutions() {
                         Can&apos;t afford everything at once?
                       </h2>
                       <p className="mt-3 text-muted-foreground leading-relaxed">
-                        Open a Shammah Material Account today and pay in installments.
+                        Open a shamah Material Account today and pay in installments.
                       </p>
                     </div>
 

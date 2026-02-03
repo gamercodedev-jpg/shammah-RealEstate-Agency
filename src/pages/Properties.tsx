@@ -23,8 +23,8 @@ export default function Properties() {
           .select("*")
           .order("created_at", { ascending: false });
 
-        // LOGGING RESULTS FOR SHAMMAH ADMIN
-        console.log("--- Shammah Plot Fetch Debug ---");
+        // LOGGING RESULTS FOR shamah ADMIN
+        console.log("--- shamah Plot Fetch Debug ---");
         console.log("Total plots found:", data?.length || 0);
         console.log("Full data:", data);
 
@@ -39,7 +39,7 @@ export default function Properties() {
         }
       } catch (err: any) {
         console.error("Critical Fetch Error:", err);
-        setError("Failed to connect to the Shammah database.");
+        setError("Failed to connect to the shamah database.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -56,7 +56,7 @@ export default function Properties() {
     <Layout>
       <section className="py-16">
         <div className="container">
-          <h1 className="font-heading text-3xl font-bold mb-6 text-shammah-green">
+          <h1 className="font-heading text-3xl font-bold mb-6 text-shamah-green">
             All Listed Properties
           </h1>
 
@@ -82,7 +82,7 @@ export default function Properties() {
               ))}
             </div>
           ) : (
-            <div className="text-center py-20 bg-muted/30 rounded-2xl border-2 border-dashed border-shammah-orange/30">
+            <div className="text-center py-20 bg-muted/30 rounded-2xl border-2 border-dashed border-shamah-orange/30">
               <p className="text-xl font-semibold text-muted-foreground mb-2">No listings visible yet.</p>
               <p className="text-sm text-gray-500">
                 Ensure your plots are not hidden by Row Level Security (RLS) in the Supabase Editor.

@@ -40,7 +40,7 @@ const serviceSections = {
   ],
 } as const;
 
-// Updated to official Shammah Real Estate production contacts per client request
+// Updated to official shamah Real Estate production contacts per client request
 const PRIMARY_PHONE = "0975705555";
 const SECONDARY_PHONE = "0975717120";
 const SECONDARY_WHATSAPP = "260975705555";
@@ -54,7 +54,7 @@ export function Header() {
   const tapTimesRef = useRef<number[]>([]);
 
   function getMasterKey() {
-    return window.localStorage.getItem("shammah_key") || "Shammah2026";
+    return window.localStorage.getItem("shamah_key") || "shamah2026";
   }
 
   const handleLogoClick = () => {
@@ -75,7 +75,7 @@ export function Header() {
       }
 
       // Mark this session as authorized so /admin doesn't reprompt.
-      window.sessionStorage.setItem("shammah_admin_authed", "1");
+      window.sessionStorage.setItem("shamah_admin_authed", "1");
 
       // Redirect as requested
       window.location.href = "/admin.html";
@@ -86,7 +86,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <button onClick={handleLogoClick} aria-label="Logo" className="flex items-center gap-2 bg-transparent border-0 p-0">
-          <img src={shamahLogo} alt="Shammah Real Estate Agency Limited" className="h-10 w-auto" />
+          <img src={shamahLogo} alt="shamah Real Estate Agency Limited" className="h-10 w-auto" />
         </button>
 
         {/* Desktop Navigation */}

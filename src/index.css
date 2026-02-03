@@ -10,8 +10,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Shammah Real Estate Design System
-  Brand palette: Forest Green + Shammah Gold
+/* shamah Real Estate Design System
+  Brand palette: Forest Green + shamah Gold
   All colors in HSL format
 */
 
@@ -37,7 +37,7 @@
     --muted: 210 20% 96%;
     --muted-foreground: 210 11% 45%;
 
-    /* Shammah Gold - Accent/CTA color */
+    /* shamah Gold - Accent/CTA color */
     --accent: 41 84% 38%;
     --accent-foreground: 0 0% 100%;
 

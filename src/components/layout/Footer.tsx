@@ -22,7 +22,7 @@ export function Footer() {
             <div className="inline-flex w-full max-w-[320px] flex-col items-center justify-center rounded-xl bg-white/95 p-4 shadow-sm">
               <img
                 src={shamahLogo}
-                alt="Shammah Real Estate Agency Limited"
+                alt="shamah Real Estate Agency Limited"
                 className="h-12 w-auto object-contain"
                 loading="lazy"
               />
@@ -148,7 +148,7 @@ export function Footer() {
                 <a
                   href={buildWhatsAppUrl(
                     [
-                      "Hello Shamah Horizon,",
+                      "Hello shamah Horizon,",
                       "I would like to open a Hardware Supply Account (pay in installments) for building materials.",
                       "Please share the requirements, payment options, and next steps.",
                     ].join("\n"),
@@ -176,7 +176,7 @@ export function Footer() {
 
         <div className="border-t border-primary-foreground/20 mt-8 pt-8 text-center space-y-2">
           <p className="text-sm text-primary-foreground/60">
-            © {new Date().getFullYear()} Shammah Real Estate Agency Limited. All rights reserved.
+            © {new Date().getFullYear()} shamah Real Estate Agency Limited. All rights reserved.
           </p>
           <p className="text-sm text-primary-foreground/60">Developed by Mthunzi-Tech-Labs.</p>
         </div>
