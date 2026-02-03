@@ -7,12 +7,18 @@ async function build() {
 
   try {
     const { count, size, warnings } = await generateSW({
+      // Ensure updates go live immediately (helps on mobile where users often never hard-refresh)
+      skipWaiting: true,
+      clientsClaim: true,
+      cleanupOutdatedCaches: true,
       globDirectory: dist,
       globPatterns: [
         '**/*.{html,js,css,svg,png,json}'
       ],
       swDest: path.join(dist, 'sw.js'),
       maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      navigateFallback: '/index.html',
+      navigateFallbackDenylist: [/^\/api\//],
       runtimeCaching: [
         {
           urlPattern: /\/icons\//,

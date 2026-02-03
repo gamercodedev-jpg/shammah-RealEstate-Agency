@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        var DEFAULT_KEY = "Shammah2026";
+        var key = localStorage.getItem("shammah_key") || DEFAULT_KEY;
+
+        // If we already authenticated this tab/session, skip reprompt.
+        var authed = sessionStorage.getItem("shammah_admin_authed") === "1";
+
+        if (!authed) {
+          var input = prompt("Master Access Key");
+          if (input !== key) {
+            alert("Access Denied");
+            window.location.replace("/");
+            return;
+          }
+          sessionStorage.setItem("shammah_admin_authed", "1");
+        }
+
+        // Your admin panel is the React route at /admin
+        window.location.replace("/admin");
+      })();
+    </script>
+  </body>
+</html>

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ToastAction } from "@/components/ui/toast";
 import { Copy, Mail, MessageCircle, Phone, Send } from "lucide-react";
-import shamahLogo from "@/assets/shamah-logo.png";
+import shamahLogo from "@/assets/shammah-logo.png";
 
 const CONTACT = {
   phoneDisplay: "0975705555",

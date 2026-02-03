@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { supabase } from "@/integrations/supabase/client";
 import type { Plot, Feed } from "@/types/database";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import shamahLogo from "@/assets/shamah-logo.png";
 import { Switch } from "@/components/ui/switch";
+import { useNavigate } from "react-router-dom";
 
 const BUCKET_NAME = "shammah-media";
 
@@ -22,6 +23,9 @@ function isBucketNotFoundError(err: unknown) {
 }
 
 export default function Admin() {
+  const navigate = useNavigate();
+  const authCheckedRef = useRef(false);
+
   const [plots, setPlots] = useState<Plot[]>([]);
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState(false);
@@ -46,7 +50,63 @@ export default function Admin() {
   const [feedVideoFile, setFeedVideoFile] = useState<File | null>(null);
   const [feedAudioFile, setFeedAudioFile] = useState<File | null>(null);
 
-  useEffect(() => { fetchAll(); }, []);
+  function getMasterKey() {
+    return window.localStorage.getItem("shammah_key") || "Shammah2026";
+  }
+
+  function ensureAdminAuthorized() {
+    if (window.sessionStorage.getItem("shammah_admin_authed") === "1") return true;
+
+    const input = window.prompt("Master Access Key");
+    const key = getMasterKey();
+    if (input !== key) {
+      window.alert("Access Denied");
+      navigate("/");
+      return false;
+    }
+
+    window.sessionStorage.setItem("shammah_admin_authed", "1");
+    return true;
+  }
+
+  function changeAdminPassword() {
+    const current = window.prompt("Enter current password");
+    if (current == null) return;
+
+    const key = getMasterKey();
+    if (current !== key) {
+      window.alert("Access Denied");
+      return;
+    }
+
+    const next = window.prompt("Enter new password (min 6 characters)");
+    if (next == null) return;
+
+    const confirmNext = window.prompt("Confirm new password");
+    if (confirmNext == null) return;
+
+    if (next !== confirmNext) {
+      window.alert("Passwords do not match");
+      return;
+    }
+
+    if (next.trim().length < 6) {
+      window.alert("Password must be at least 6 characters");
+      return;
+    }
+
+    window.localStorage.setItem("shammah_key", next);
+    window.alert("Password updated successfully");
+  }
+
+  useEffect(() => {
+    // React 18 StrictMode runs effects twice in dev.
+    if (authCheckedRef.current) return;
+    authCheckedRef.current = true;
+
+    if (!ensureAdminAuthorized()) return;
+    fetchAll();
+  }, []);
 
   async function fetchAll() {
     setLoading(true);
@@ -242,6 +302,12 @@ export default function Admin() {
           <div className="flex gap-4 mb-8">
             <Button onClick={() => setTab("plots")} variant={tab === "plots" ? "default" : "outline"}>Manage Plots</Button>
             <Button onClick={() => setTab("news")} variant={tab === "news" ? "default" : "outline"}>Post News</Button>
+          </div>
+
+          <div className="flex justify-end mb-8">
+            <Button type="button" variant="outline" onClick={changeAdminPassword}>
+              Change Password
+            </Button>
           </div>
 
         {tab === "plots" ? (

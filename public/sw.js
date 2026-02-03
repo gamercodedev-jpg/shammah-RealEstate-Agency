@@ -6,7 +6,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
   );
-  // Do not take over immediately; let clients control when appropriate
+  // Take over immediately to reduce stale-first-load issues after deploys.
+  self.skipWaiting();
 });
 
 // Activate: clean up old caches and claim clients
@@ -28,15 +29,13 @@ self.addEventListener('fetch', (event) => {
   // App shell / navigation requests: serve index.html from cache first
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html').then((cached) => {
-        const networkFetch = fetch(event.request).then((res) => {
-          // Update the cache with the latest index.html
+      fetch(event.request)
+        .then((res) => {
           const copy = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
           return res;
-        }).catch(() => cached);
-        return cached || networkFetch;
-      }).catch(() => fetch(event.request))
+        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }

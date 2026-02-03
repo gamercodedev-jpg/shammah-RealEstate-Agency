@@ -1,6 +1,6 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Phone, ChevronDown, Building2, HardHat, Landmark, Sparkles, Video } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -49,22 +49,36 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(false);
   const location = useLocation();
-  const navigate = useNavigate();
 
-  // secret tap counter for logo to open admin
-  const [tapCount, setTapCount] = useState(0);
-  let tapTimer: number | undefined;
+  // Secret 5-tap login (5 taps within 3 seconds)
+  const tapTimesRef = useRef<number[]>([]);
+
+  function getMasterKey() {
+    return window.localStorage.getItem("shammah_key") || "Shammah2026";
+  }
 
   const handleLogoClick = () => {
-    setTapCount((c) => c + 1);
-    window.clearTimeout(tapTimer);
-    tapTimer = window.setTimeout(() => {
-      setTapCount(0);
-    }, 2000);
+    const now = Date.now();
+    const windowMs = 3000;
 
-    if (tapCount + 1 >= 5) {
-      setTapCount(0);
-      navigate("/admin", { state: { openedAt: new Date().toISOString() } });
+    tapTimesRef.current = [...tapTimesRef.current, now].filter((t) => now - t <= windowMs);
+
+    if (tapTimesRef.current.length >= 5) {
+      tapTimesRef.current = [];
+
+      const input = window.prompt("Master Access Key");
+      const key = getMasterKey();
+
+      if (input !== key) {
+        window.alert("Access Denied");
+        return;
+      }
+
+      // Mark this session as authorized so /admin doesn't reprompt.
+      window.sessionStorage.setItem("shammah_admin_authed", "1");
+
+      // Redirect as requested
+      window.location.href = "/admin.html";
     }
   };
 
