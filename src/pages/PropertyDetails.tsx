@@ -89,9 +89,25 @@ export default function PropertyDetails() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Main */}
               <div className="lg:col-span-8">
-                {/* Hero image */}
+                {/* Hero image / video */}
                 <div className="relative overflow-hidden rounded-2xl border bg-card">
-                  <img src={heroImage} alt={title} className="w-full aspect-[16/9] object-cover" />
+                  {plot.video_url ? (
+                    <video
+                      src={plot.video_url}
+                      controls
+                      className="w-full aspect-[16/9] object-cover bg-black"
+                    />
+                  ) : (
+                    <img src={heroImage} alt={title} className="w-full aspect-[16/9] object-cover" />
+                  )}
+
+                  {plot.is_sold ? (
+                    <div className="absolute inset-0 flex items-start justify-end p-4 pointer-events-none">
+                      <Badge className="bg-red-600 text-white text-sm px-3 py-1 shadow-lg">
+                        SOLD
+                      </Badge>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Gallery */}
@@ -116,6 +132,9 @@ export default function PropertyDetails() {
                         {location}
                       </Badge>
                     ) : null}
+                    {plot.is_sold ? (
+                      <Badge className="bg-red-600 text-white">Sold</Badge>
+                    ) : null}
                     {plot.is_titled ? <Badge className="bg-primary text-primary-foreground">Titled</Badge> : null}
                     {plot.status ? <Badge variant="outline">{String(plot.status)}</Badge> : null}
                   </div>
@@ -123,6 +142,13 @@ export default function PropertyDetails() {
                   <div className="mt-6 text-muted-foreground whitespace-pre-wrap leading-relaxed">
                     {description || "No description provided."}
                   </div>
+
+                  {plot.audio_url ? (
+                    <div className="mt-6">
+                      <div className="text-sm font-medium mb-2">Voice note from shamah</div>
+                      <audio controls src={plot.audio_url} className="w-full" />
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

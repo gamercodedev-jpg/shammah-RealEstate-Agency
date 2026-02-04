@@ -40,6 +40,8 @@ export default function Admin() {
   const [location, setLocation] = useState("");
   const [priceZmw, setPriceZmw] = useState(0);
   const [plotImageFiles, setPlotImageFiles] = useState<File[]>([]);
+  const [plotVideoFile, setPlotVideoFile] = useState<File | null>(null);
+  const [plotAudioFile, setPlotAudioFile] = useState<File | null>(null);
 
   // News/Feed form state
   const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
@@ -48,6 +50,52 @@ export default function Admin() {
   const [feedPublished, setFeedPublished] = useState(true);
   const [feedImageUrl, setFeedImageUrl] = useState("");
   const [feedImageFile, setFeedImageFile] = useState<File | null>(null);
+  const [feedVideoFile, setFeedVideoFile] = useState<File | null>(null);
+  const [feedAudioFile, setFeedAudioFile] = useState<File | null>(null);
+
+  // Simple audio recording state (used for both plots and news)
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+
+  async function startRecording(target: "plot" | "news") {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+        const file = new File([blob], `voice-note-${Date.now()}.webm`, { type: "audio/webm" });
+        if (target === "plot") {
+          setPlotAudioFile(file);
+        } else {
+          setFeedAudioFile(file);
+        }
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Could not start recording. Please check microphone permissions.", variant: "destructive" });
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  }
 
   function getMasterKey() {
     return window.localStorage.getItem("shammah_key") || "Shammah2026";
@@ -135,8 +183,8 @@ export default function Admin() {
           soil_type: null,
           distance_from_road: null,
           images,
-          video_url: null,
-          audio_url: null,
+          video_url: row.video_url ?? null,
+          audio_url: row.audio_url ?? null,
           is_featured: null,
           created_at: row.created_at ?? new Date().toISOString(),
           updated_at: row.created_at ?? new Date().toISOString(),
@@ -148,8 +196,8 @@ export default function Admin() {
         title: row.headline ?? "",
         content: row.content ?? "",
         image_url: row.image_url ?? "",
-        video_url: null,
-        audio_url: null,
+        video_url: row.video_url ?? null,
+        audio_url: row.audio_url ?? null,
         is_published: true,
         created_at: row.published_at ?? new Date().toISOString(),
         updated_at: row.published_at ?? new Date().toISOString(),
@@ -183,6 +231,12 @@ export default function Admin() {
       formData.append("content", feedContent);
       formData.append("author", "Admin");
       formData.append("image", feedImageFile);
+      if (feedVideoFile) {
+        formData.append("video", feedVideoFile);
+      }
+      if (feedAudioFile) {
+        formData.append("audio", feedAudioFile);
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/news`, {
         method: "POST",
@@ -201,6 +255,8 @@ export default function Admin() {
       setFeedPublished(true);
       setFeedImageUrl("");
       setFeedImageFile(null);
+      setFeedVideoFile(null);
+      setFeedAudioFile(null);
       fetchAll();
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Failed to save news", variant: "destructive" });
@@ -243,6 +299,12 @@ export default function Admin() {
       for (const file of plotImageFiles) {
         formData.append("images", file);
       }
+      if (plotVideoFile) {
+        formData.append("video", plotVideoFile);
+      }
+      if (plotAudioFile) {
+        formData.append("audio", plotAudioFile);
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/plots`, {
         method: "POST",
@@ -261,6 +323,8 @@ export default function Admin() {
       setLocation("");
       setPriceZmw(0);
       setPlotImageFiles([]);
+      setPlotVideoFile(null);
+      setPlotAudioFile(null);
       fetchAll();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to save plot", variant: "destructive" });
@@ -345,6 +409,28 @@ export default function Admin() {
                   setPlotImageFiles(files);
                 }}
               />
+              <Input
+                type="file"
+                accept="video/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  setPlotVideoFile(file);
+                }}
+              />
+              <div className="space-y-2 text-sm">
+                <div>Voice note (optional)</div>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => (isRecording ? stopRecording() : startRecording("plot"))}
+                  >
+                    {isRecording ? "Stop Recording" : "Record Voice Note"}
+                  </Button>
+                  {plotAudioFile && <span className="text-xs text-muted-foreground">Voice note attached</span>}
+                </div>
+              </div>
               <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
                 {loading ? "Saving..." : "Save Plot to Database"}
               </Button>
@@ -398,6 +484,28 @@ export default function Admin() {
                     setFeedImageFile(file || null);
                   }}
                 />
+                <Input
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] as File | undefined;
+                    setFeedVideoFile(file || null);
+                  }}
+                />
+                <div className="space-y-2 text-xs mt-1">
+                  <div className="font-medium">Voice note (optional)</div>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => (isRecording ? stopRecording() : startRecording("news"))}
+                    >
+                      {isRecording ? "Stop Recording" : "Record Voice Note"}
+                    </Button>
+                    {feedAudioFile && <span className="text-[11px] text-muted-foreground">Voice note attached</span>}
+                  </div>
+                </div>
                 <div className="text-xs text-muted-foreground">Choose an image to display with this news post.</div>
               </div>
               <label className="flex items-center gap-2 text-sm">

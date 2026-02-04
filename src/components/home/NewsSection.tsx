@@ -23,8 +23,8 @@ export function NewsSection() {
           title: row.headline ?? "",
           content: row.content ?? "",
           image_url: row.image_url ?? "",
-          video_url: null,
-          audio_url: null,
+          video_url: row.video_url ?? null,
+          audio_url: row.audio_url ?? null,
           is_published: true,
           created_at: row.published_at ?? null,
           updated_at: row.published_at ?? null,
@@ -69,13 +69,21 @@ export function NewsSection() {
             {feeds.map((f) => (
               <article key={f.id} className="bg-card rounded-lg overflow-hidden shadow">
                 <Link to={`/news/${f.id}`} className="block">
-                  {f.image_url && (
+                  {f.video_url ? (
+                    <video
+                      src={f.video_url}
+                      className="h-40 w-full object-cover bg-black"
+                      muted
+                      autoPlay
+                      loop
+                    />
+                  ) : f.image_url ? (
                     <img
                       src={f.image_url || ""}
                       alt={f.title}
                       className="h-40 w-full object-cover"
                     />
-                  )}
+                  ) : null}
                 </Link>
                 <div className="p-4">
                   <Link to={`/news/${f.id}`} className="hover:underline">

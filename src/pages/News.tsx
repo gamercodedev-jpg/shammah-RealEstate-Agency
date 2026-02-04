@@ -24,8 +24,8 @@ export default function News() {
           title: row.headline ?? "",
           content: row.content ?? "",
           image_url: row.image_url ?? "",
-          video_url: null,
-          audio_url: null,
+          video_url: row.video_url ?? null,
+          audio_url: row.audio_url ?? null,
           is_published: true,
           created_at: row.published_at ?? null,
         }));
@@ -53,11 +53,21 @@ export default function News() {
         {featured && (
           <article className="mb-8 rounded overflow-hidden relative">
             <Link to={`/news/${featured.id}`} className="block">
-              <img
-                src={featured.image_url || "/placeholder.svg"}
-                alt={featured.title}
-                className="w-full h-72 object-cover"
-              />
+              {featured.video_url ? (
+                <video
+                  src={featured.video_url}
+                  className="w-full h-72 object-cover bg-black"
+                  muted
+                  autoPlay
+                  loop
+                />
+              ) : (
+                <img
+                  src={featured.image_url || "/placeholder.svg"}
+                  alt={featured.title}
+                  className="w-full h-72 object-cover"
+                />
+              )}
             </Link>
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
               <div>
@@ -90,7 +100,17 @@ export default function News() {
               className="group relative overflow-hidden rounded-xl bg-card border border-border shadow-sm transition-all duration-200 cursor-pointer hover:-translate-y-1 hover:shadow-lg hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <div className="relative">
-                <img src={coverSrc} alt={f.title || "News"} className="h-40 w-full object-cover" />
+                {f.video_url ? (
+                  <video
+                    src={f.video_url}
+                    className="h-40 w-full object-cover bg-black"
+                    muted
+                    autoPlay
+                    loop
+                  />
+                ) : (
+                  <img src={coverSrc} alt={f.title || "News"} className="h-40 w-full object-cover" />
+                )}
                 <div className="absolute top-3 left-3 flex items-center gap-2">
                   <span
                     className={`text-xs px-2 py-1 rounded-full backdrop-blur border ${

@@ -17,6 +17,9 @@ db.exec(`
     location TEXT NOT NULL,
     price_zmw INTEGER NOT NULL,
     image_url TEXT NOT NULL,
+    video_url TEXT,
+    audio_url TEXT,
+    is_sold INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL
   );
 
@@ -33,15 +36,32 @@ db.exec(`
     content TEXT NOT NULL,
     author TEXT NOT NULL,
     image_url TEXT NOT NULL,
+    video_url TEXT,
+    audio_url TEXT,
     published_at TEXT NOT NULL
   );
 `);
 
 // Ensure newer columns exist when upgrading an existing DB
 const plotColumns = db.prepare("PRAGMA table_info(plots)").all();
-const hasIsSold = plotColumns.some((col) => col.name === "is_sold");
-if (!hasIsSold) {
+const plotColumnNames = plotColumns.map((c) => c.name);
+if (!plotColumnNames.includes("is_sold")) {
   db.prepare("ALTER TABLE plots ADD COLUMN is_sold INTEGER NOT NULL DEFAULT 0").run();
+}
+if (!plotColumnNames.includes("video_url")) {
+  db.prepare("ALTER TABLE plots ADD COLUMN video_url TEXT").run();
+}
+if (!plotColumnNames.includes("audio_url")) {
+  db.prepare("ALTER TABLE plots ADD COLUMN audio_url TEXT").run();
+}
+
+const newsColumns = db.prepare("PRAGMA table_info(news)").all();
+const newsColumnNames = newsColumns.map((c) => c.name);
+if (!newsColumnNames.includes("video_url")) {
+  db.prepare("ALTER TABLE news ADD COLUMN video_url TEXT").run();
+}
+if (!newsColumnNames.includes("audio_url")) {
+  db.prepare("ALTER TABLE news ADD COLUMN audio_url TEXT").run();
 }
 
 export default db;

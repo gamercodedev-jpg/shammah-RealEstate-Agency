@@ -42,8 +42,8 @@ export default function NewsDetails() {
           title: row.headline ?? "",
           content: row.content ?? "",
           image_url: row.image_url ?? "",
-          video_url: null,
-          audio_url: null,
+          video_url: row.video_url ?? null,
+          audio_url: row.audio_url ?? null,
           is_published: true,
           created_at: row.published_at ?? null,
           updated_at: row.published_at ?? null,
@@ -152,7 +152,11 @@ export default function NewsDetails() {
               </header>
 
               {/* Hero media */}
-              {imageSrc ? (
+              {videoSrc ? (
+                <div className="overflow-hidden rounded-2xl border bg-black">
+                  <video src={videoSrc} controls className="w-full max-h-[70vh] object-contain" />
+                </div>
+              ) : imageSrc ? (
                 <div className="overflow-hidden rounded-2xl border bg-black">
                   <img
                     src={imageSrc}
@@ -160,10 +164,6 @@ export default function NewsDetails() {
                     className="w-full max-h-[70vh] object-contain"
                     loading="eager"
                   />
-                </div>
-              ) : videoSrc ? (
-                <div className="overflow-hidden rounded-2xl border bg-black">
-                  <video src={videoSrc} controls className="w-full max-h-[70vh] object-contain" />
                 </div>
               ) : null}
 

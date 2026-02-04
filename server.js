@@ -4,12 +4,17 @@ import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 
 import db from "./db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load environment variables for local development from .env.local in project root.
+// We avoid loading the legacy .env (which contains old Firebase code, not key=value pairs).
+dotenv.config({ path: path.join(process.cwd(), ".env.local") });
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -25,48 +30,94 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Simple runtime check so missing keys are obvious in logs
+// (does not print actual secrets)
+// eslint-disable-next-line no-console
+console.log("Cloudinary env:", {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  hasKey: !!process.env.CLOUDINARY_API_KEY,
+  hasSecret: !!process.env.CLOUDINARY_API_SECRET,
+});
+
 // Multer configuration: keep files in memory, then upload to Cloudinary
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Helper: upload a file buffer using cloudinary.uploader.upload
-async function uploadToCloudinary(file, folder) {
+async function uploadToCloudinary(file, folder, resourceType = "image") {
   const base64 = file.buffer.toString("base64");
   const dataUri = `data:${file.mimetype};base64,${base64}`;
   return cloudinary.uploader.upload(dataUri, {
     folder,
-    resource_type: "image",
+    resource_type: resourceType,
   });
 }
 
 // --- PLOTS API ---
 
-// Allow up to 10 images per plot
-app.post("/api/plots", upload.array("images", 10), async (req, res) => {
+// Allow up to 10 images plus optional video & audio per plot
+app.post(
+  "/api/plots",
+  upload.fields([
+    { name: "images", maxCount: 10 },
+    { name: "video", maxCount: 1 },
+    { name: "audio", maxCount: 1 },
+  ]),
+  async (req, res) => {
   try {
     const { title, location, price_zmw } = req.body;
-    const files = req.files || [];
+    const files = req.files || {};
+    const imageFiles = Array.isArray(files) ? files : files.images || [];
+    const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
+    const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
 
     if (!title || !location || !price_zmw) {
       return res.status(400).json({ error: "title, location, and price_zmw are required" });
     }
 
-    if (!Array.isArray(files) || files.length === 0) {
+    if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
       return res.status(400).json({ error: "At least one image file is required" });
     }
-
     // Upload all images to Cloudinary
     const uploadResults = await Promise.all(
-      files.map((file) => uploadToCloudinary(file, "shammah/plots")),
+      imageFiles.map((file) => uploadToCloudinary(file, "shammah/plots")),
     );
 
     const imageUrls = uploadResults.map((r) => r.secure_url);
     const primaryImageUrl = imageUrls[0];
 
+    // Optional video & audio uploads
+    let videoUrl = null;
+    if (videoFile) {
+      const videoResult = await uploadToCloudinary(
+        videoFile,
+        "shammah/plots/videos",
+        "video",
+      );
+      videoUrl = videoResult.secure_url;
+    }
+
+    let audioUrl = null;
+    if (audioFile) {
+      const audioResult = await uploadToCloudinary(
+        audioFile,
+        "shammah/plots/audio",
+        "video",
+      );
+      audioUrl = audioResult.secure_url;
+    }
+
     // Insert the main plot record with a primary image URL
     const stmt = db.prepare(
-      "INSERT INTO plots (title, location, price_zmw, image_url, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
+      "INSERT INTO plots (title, location, price_zmw, image_url, video_url, audio_url, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
     );
-    const info = stmt.run(title, location, Number(price_zmw), primaryImageUrl);
+    const info = stmt.run(
+      title,
+      location,
+      Number(price_zmw),
+      primaryImageUrl,
+      videoUrl,
+      audioUrl,
+    );
 
     // Insert all image URLs into plot_images linked to this plot
     const plotId = Number(info.lastInsertRowid);
@@ -162,26 +213,55 @@ app.delete("/api/plots/:id", (req, res) => {
 
 // --- NEWS API ---
 
-app.post("/api/news", upload.single("image"), async (req, res) => {
+app.post(
+  "/api/news",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+    { name: "audio", maxCount: 1 },
+  ]),
+  async (req, res) => {
   try {
     const { headline, content, author } = req.body;
-    const file = req.file;
+    const files = req.files || {};
+    const imageFile = !Array.isArray(files) && files.image ? files.image[0] : undefined;
+    const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
+    const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
 
     if (!headline || !content || !author) {
       return res.status(400).json({ error: "headline, content, and author are required" });
     }
 
-    if (!file) {
+    if (!imageFile) {
       return res.status(400).json({ error: "Image file is required" });
     }
-
-    const uploadResult = await uploadToCloudinary(file, "shammah/news");
+    const uploadResult = await uploadToCloudinary(imageFile, "shammah/news");
     const imageUrl = uploadResult.secure_url;
 
+    let videoUrl = null;
+    if (videoFile) {
+      const videoResult = await uploadToCloudinary(
+        videoFile,
+        "shammah/news/videos",
+        "video",
+      );
+      videoUrl = videoResult.secure_url;
+    }
+
+    let audioUrl = null;
+    if (audioFile) {
+      const audioResult = await uploadToCloudinary(
+        audioFile,
+        "shammah/news/audio",
+        "video",
+      );
+      audioUrl = audioResult.secure_url;
+    }
+
     const stmt = db.prepare(
-      "INSERT INTO news (headline, content, author, image_url, published_at) VALUES (?, ?, ?, ?, datetime('now'))",
+      "INSERT INTO news (headline, content, author, image_url, video_url, audio_url, published_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
     );
-    const info = stmt.run(headline, content, author, imageUrl);
+    const info = stmt.run(headline, content, author, imageUrl, videoUrl, audioUrl);
 
     const inserted = db.prepare("SELECT * FROM news WHERE id = ?").get(info.lastInsertRowid);
     return res.status(201).json(inserted);
