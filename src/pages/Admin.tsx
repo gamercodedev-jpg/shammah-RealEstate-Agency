@@ -39,7 +39,7 @@ export default function Admin() {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [priceZmw, setPriceZmw] = useState(0);
-  const [plotImageFile, setPlotImageFile] = useState<File | null>(null);
+  const [plotImageFiles, setPlotImageFiles] = useState<File[]>([]);
 
   // News/Feed form state
   const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
@@ -113,7 +113,11 @@ export default function Admin() {
       const newsRaw = await newsRes.json();
 
       const mappedPlots: Plot[] = (Array.isArray(plotsRaw) ? plotsRaw : []).map((row: any) => {
-        const images = row.image_url ? [row.image_url] : [];
+        const images: string[] = Array.isArray(row.images)
+          ? row.images
+          : row.image_url
+          ? [row.image_url]
+          : [];
         return {
           id: String(row.id ?? ""),
           title: row.title ?? "",
@@ -223,10 +227,10 @@ export default function Admin() {
     setLoading(true);
 
     try {
-      if (!plotImageFile) {
+      if (!plotImageFiles.length) {
         toast({
           title: "Image required",
-          description: "Please choose an image for this listing.",
+          description: "Please choose at least one image for this listing.",
           variant: "destructive",
         });
         return;
@@ -236,7 +240,9 @@ export default function Admin() {
       formData.append("title", title);
       formData.append("location", location);
       formData.append("price_zmw", String(priceZmw));
-      formData.append("image", plotImageFile);
+      for (const file of plotImageFiles) {
+        formData.append("images", file);
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/plots`, {
         method: "POST",
@@ -254,7 +260,7 @@ export default function Admin() {
       setTitle("");
       setLocation("");
       setPriceZmw(0);
-      setPlotImageFile(null);
+      setPlotImageFiles([]);
       fetchAll();
     } catch (err: any) {
       toast({ title: "Error", description: err.message || "Failed to save plot", variant: "destructive" });
@@ -333,9 +339,10 @@ export default function Admin() {
               <Input
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={(e) => {
-                  const file = e.target.files?.[0] || null;
-                  setPlotImageFile(file);
+                  const files = Array.from(e.target.files ?? []);
+                  setPlotImageFiles(files);
                 }}
               />
               <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>

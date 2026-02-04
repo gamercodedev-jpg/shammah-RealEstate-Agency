@@ -40,29 +40,48 @@ async function uploadToCloudinary(file, folder) {
 
 // --- PLOTS API ---
 
-app.post("/api/plots", upload.single("image"), async (req, res) => {
+// Allow up to 10 images per plot
+app.post("/api/plots", upload.array("images", 10), async (req, res) => {
   try {
     const { title, location, price_zmw } = req.body;
-    const file = req.file;
+    const files = req.files || [];
 
     if (!title || !location || !price_zmw) {
       return res.status(400).json({ error: "title, location, and price_zmw are required" });
     }
 
-    if (!file) {
-      return res.status(400).json({ error: "Image file is required" });
+    if (!Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ error: "At least one image file is required" });
     }
 
-    const uploadResult = await uploadToCloudinary(file, "shammah/plots");
-    const imageUrl = uploadResult.secure_url;
+    // Upload all images to Cloudinary
+    const uploadResults = await Promise.all(
+      files.map((file) => uploadToCloudinary(file, "shammah/plots")),
+    );
 
+    const imageUrls = uploadResults.map((r) => r.secure_url);
+    const primaryImageUrl = imageUrls[0];
+
+    // Insert the main plot record with a primary image URL
     const stmt = db.prepare(
       "INSERT INTO plots (title, location, price_zmw, image_url, created_at) VALUES (?, ?, ?, ?, datetime('now'))",
     );
-    const info = stmt.run(title, location, Number(price_zmw), imageUrl);
+    const info = stmt.run(title, location, Number(price_zmw), primaryImageUrl);
 
-    const inserted = db.prepare("SELECT * FROM plots WHERE id = ?").get(info.lastInsertRowid);
-    return res.status(201).json(inserted);
+    // Insert all image URLs into plot_images linked to this plot
+    const plotId = Number(info.lastInsertRowid);
+    const insertImageStmt = db.prepare(
+      "INSERT INTO plot_images (plot_id, image_url) VALUES (?, ?)",
+    );
+    const insertImages = db.transaction((urls) => {
+      for (const url of urls) {
+        insertImageStmt.run(plotId, url);
+      }
+    });
+    insertImages(imageUrls);
+
+    const inserted = db.prepare("SELECT * FROM plots WHERE id = ?").get(plotId);
+    return res.status(201).json({ ...inserted, images: imageUrls });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("POST /api/plots error", err);
@@ -72,8 +91,27 @@ app.post("/api/plots", upload.single("image"), async (req, res) => {
 
 app.get("/api/plots", (_req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM plots ORDER BY datetime(created_at) DESC").all();
-    return res.json(rows);
+    const plots = db.prepare(
+      "SELECT * FROM plots ORDER BY datetime(created_at) DESC",
+    ).all();
+
+    const images = db.prepare(
+      "SELECT plot_id, image_url FROM plot_images ORDER BY id ASC",
+    ).all();
+
+    const imagesByPlot = new Map();
+    for (const row of images) {
+      const key = row.plot_id;
+      if (!imagesByPlot.has(key)) imagesByPlot.set(key, []);
+      imagesByPlot.get(key).push(row.image_url);
+    }
+
+    const result = plots.map((plot) => {
+      const imgs = imagesByPlot.get(plot.id) || (plot.image_url ? [plot.image_url] : []);
+      return { ...plot, images: imgs };
+    });
+
+    return res.json(result);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("GET /api/plots error", err);

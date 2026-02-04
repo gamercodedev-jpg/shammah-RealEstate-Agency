@@ -20,6 +20,13 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS plot_images (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plot_id INTEGER NOT NULL,
+    image_url TEXT NOT NULL,
+    FOREIGN KEY (plot_id) REFERENCES plots(id) ON DELETE CASCADE
+  );
+
   CREATE TABLE IF NOT EXISTS news (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     headline TEXT NOT NULL,
