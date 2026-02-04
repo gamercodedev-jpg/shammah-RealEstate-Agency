@@ -66,7 +66,8 @@ export default function Diaspora() {
   const listingsRef = useRef<HTMLDivElement | null>(null);
 
   const API_BASE_URL =
-    (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+    "https://shammah-realestate-agency.onrender.com";
 
   const getDisplayPrice = (plot: any, preferredCurrency: Currency) => {
     const priceZmw = toFiniteNumber(plot?.price_zmw);

@@ -12,7 +12,8 @@ import { useNavigate } from "react-router-dom";
 const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
 const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "https://shammah-realestate-agency.onrender.com";
 
 function uniqueFilePath(file: File) {
   return `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
@@ -122,7 +123,7 @@ export default function Admin() {
           price_zmw: Number(row.price_zmw ?? 0),
           price_usd: 0,
           status: "available",
-          is_sold: null,
+          is_sold: row.is_sold === 1 || row.is_sold === true,
           is_titled: false,
           has_road_access: null,
           has_water: null,
@@ -275,6 +276,31 @@ export default function Admin() {
     }
   };
 
+  const togglePlotSold = async (plot: Plot, nextValue: boolean) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/plots/${plot.id}/sold`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ is_sold: nextValue }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update sold status");
+      }
+
+      const updated = await res.json();
+      const updatedIsSold = updated.is_sold === 1 || updated.is_sold === true;
+
+      setPlots((prev) =>
+        prev.map((p) => (p.id === plot.id ? { ...p, is_sold: updatedIsSold } : p)),
+      );
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to update sold status", variant: "destructive" });
+    }
+  };
+
   return (
     <Layout>
       <div className="relative">
@@ -323,6 +349,7 @@ export default function Admin() {
                   <TableRow>
                     <TableHead>Title</TableHead>
                     <TableHead>Price (ZMW)</TableHead>
+                    <TableHead>Sold</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -331,6 +358,12 @@ export default function Admin() {
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.title}</TableCell>
                       <TableCell>{p.price_zmw}</TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={!!p.is_sold}
+                          onCheckedChange={(value) => togglePlotSold(p, value)}
+                        />
+                      </TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button size="sm" variant="outline" onClick={() => { setEditingPlot(p); setTitle(p.title); setLocation(p.location || ""); setPriceZmw(p.price_zmw || 0); }}>Edit</Button>
                         <Button size="sm" variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>

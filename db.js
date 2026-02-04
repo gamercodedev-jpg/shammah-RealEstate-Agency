@@ -30,4 +30,11 @@ db.exec(`
   );
 `);
 
+// Ensure newer columns exist when upgrading an existing DB
+const plotColumns = db.prepare("PRAGMA table_info(plots)").all();
+const hasIsSold = plotColumns.some((col) => col.name === "is_sold");
+if (!hasIsSold) {
+  db.prepare("ALTER TABLE plots ADD COLUMN is_sold INTEGER NOT NULL DEFAULT 0").run();
+}
+
 export default db;

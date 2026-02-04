@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Plot, PropertyFilters } from "@/types/database";
 
-// Base URL for the local API (Express + SQLite backend)
+// Base URL for the API (Render in production, env-configurable)
 const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+  "https://shammah-realestate-agency.onrender.com";
 
 function mapToPlot(row: any): Plot {
   const images: string[] = Array.isArray(row?.images)
