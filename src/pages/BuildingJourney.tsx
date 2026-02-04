@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -107,38 +106,11 @@ export default function BuildingJourney() {
     setSubmitting(true);
 
     const messageParts = ["Building Journey Request", enquiryText].filter(Boolean);
-
-    const { error } = await supabase.from("inquiries").insert([
-      {
-        name: fullName,
-        email: email || null,
-        phone,
-        message: messageParts.join("\n"),
-        plot_id: null,
-      },
-    ]);
-
+    // Local-first handover: skip backend storage, keep WhatsApp/email as primary channels.
     setSubmitting(false);
-
-    if (error) {
-      const status = (error as any)?.status;
-      const msg = String((error as any)?.message || "");
-      if (status === 404 || msg.toLowerCase().includes("could not find") || msg.toLowerCase().includes("inquiries")) {
-        toast({
-          title: "Inquiry system not set up",
-          description:
-            "Your Supabase project is missing the inquiries table. Apply the SQL migrations in the supabase/migrations folder (or create an inquiries table), then reload and try again.",
-          variant: "destructive",
-        });
-      } else {
-        toast({ title: "Submission failed", description: error.message, variant: "destructive" });
-      }
-      return;
-    }
-
     toast({
-      title: "Submitted",
-      description: "We received your request. Want faster response? Message us on WhatsApp.",
+      title: "Details ready",
+      description: "Use WhatsApp or call/email us with your plan details.",
       action: (
         <ToastAction
           altText="Open WhatsApp"

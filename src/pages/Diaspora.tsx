@@ -10,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { publicStorageUrl } from "@/integrations/supabase/utils";
 import {
   ArrowRight,
   CheckCircle,
@@ -66,6 +64,9 @@ export default function Diaspora() {
 
   const navigate = useNavigate();
   const listingsRef = useRef<HTMLDivElement | null>(null);
+
+  const API_BASE_URL =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
 
   const getDisplayPrice = (plot: any, preferredCurrency: Currency) => {
     const priceZmw = toFiniteNumber(plot?.price_zmw);
@@ -127,9 +128,19 @@ export default function Diaspora() {
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const { data } = await supabase.from("plots").select("*").order("created_at", { ascending: false });
-      setPlots((data as any[]) || []);
-      setLoading(false);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/plots`);
+        if (!res.ok) throw new Error("Failed to load plots");
+        const raw = await res.json();
+        const rows = Array.isArray(raw) ? raw : [];
+        setPlots(rows);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load plots for Diaspora", err);
+        setPlots([]);
+      } finally {
+        setLoading(false);
+      }
     })();
 
     (async () => {
@@ -443,7 +454,7 @@ export default function Diaspora() {
                 >
                   <div className="relative">
                     <img
-                      src={publicStorageUrl(p.images?.[0] || "") || "/placeholder.svg"}
+                      src={(Array.isArray(p.images) && p.images[0]) || "/placeholder.svg"}
                       alt={p.title}
                       className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                     />

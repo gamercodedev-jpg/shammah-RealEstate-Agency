@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
@@ -143,20 +142,20 @@ export default function Contact() {
       return;
     }
     setSubmitting(true);
-    const { error } = await supabase.from("inquiries").insert([
-      { name, email: email || null, phone, message: message || null },
-    ]);
-    setSubmitting(false);
 
-    if (error) {
-      toast({ title: "Submission failed", description: error.message, variant: "destructive" });
-      return;
-    }
-
+    // For the local-first handover, skip backend storage and
+    // encourage the user to reach out via WhatsApp/email instead.
     setConfettiSeed(Date.now());
     window.setTimeout(() => setConfettiSeed(null), 1600);
-    toast({ title: "Inquiry sent!", description: "We'll get back to you shortly." });
-    setName(""); setEmail(""); setPhone(""); setMessage("");
+    toast({
+      title: "Inquiry drafted",
+      description: "Use WhatsApp, call, or email to send your message directly.",
+    });
+    setName("");
+    setEmail("");
+    setPhone("");
+    setMessage("");
+    setSubmitting(false);
   }
 
   return (

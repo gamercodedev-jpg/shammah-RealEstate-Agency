@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Plot } from "@/types/database";
-import publicStorageUrl from "@/integrations/supabase/utils";
 
 interface PropertyCardProps {
   property: Plot;
@@ -26,14 +25,13 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const locationLabel = property.location || "Location TBD";
   const titleLabel = property.title || "Untitled Property";
 
-  const firstImage = property.images?.[0];
-  const resolvedImage =
-    typeof firstImage === "string" && firstImage.trim()
-      ? publicStorageUrl(firstImage.trim())
+  const firstImage =
+    Array.isArray(property.images) && typeof property.images[0] === "string"
+      ? property.images[0]
       : undefined;
 
   const mainImage =
-    resolvedImage ||
+    (firstImage && firstImage.trim()) ||
     "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800";
 
   return (

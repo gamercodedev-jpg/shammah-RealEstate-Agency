@@ -1,15 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, MapPin, MessageCircle, CalendarDays, CreditCard, Video } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
-import { supabase } from "@/integrations/supabase/client";
 import type { Plot } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import publicStorageUrl from "@/integrations/supabase/utils";
+import { usePlot } from "@/hooks/usePlots";
 
 function formatPriceZmw(price: unknown) {
   const n = Number(price);
@@ -22,58 +21,21 @@ function formatPriceZmw(price: unknown) {
   }).format(n);
 }
 
-function resolveImageSrc(value: unknown) {
-  const raw = typeof value === "string" ? value.trim() : "";
-  if (!raw) return undefined;
-  return publicStorageUrl(raw) || undefined;
-}
-
 function whatsappUrl(phone: string, text: string) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
 export default function PropertyDetails() {
   const { id } = useParams<{ id: string }>();
-
-  const [plot, setPlot] = useState<Plot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      if (!id) {
-        setError("Missing property id");
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      const { data, error } = await supabase.from("plots").select("*").eq("id", id).single();
-
-      if (!mounted) return;
-
-      if (error) {
-        setError(error.message);
-        setPlot(null);
-      } else {
-        setPlot((data as Plot) || null);
-      }
-
-      setLoading(false);
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [id]);
+  const {
+    data: plot,
+    isLoading: loading,
+    error,
+  } = usePlot(id || "");
 
   const images = useMemo(() => {
     const arr = Array.isArray(plot?.images) ? plot!.images : [];
-    return arr.map(resolveImageSrc).filter(Boolean) as string[];
+    return arr.filter((src) => typeof src === "string" && src.trim().length > 0) as string[];
   }, [plot]);
 
   const heroImage = images[0] || "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1600";
@@ -116,7 +78,7 @@ export default function PropertyDetails() {
           ) : error ? (
             <Alert variant="destructive">
               <AlertTitle>Failed to load property</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{String(error)}</AlertDescription>
             </Alert>
           ) : !plot ? (
             <Alert>
@@ -130,23 +92,6 @@ export default function PropertyDetails() {
                 {/* Hero image */}
                 <div className="relative overflow-hidden rounded-2xl border bg-card">
                   <img src={heroImage} alt={title} className="w-full aspect-[16/9] object-cover" />
-
-                  {(plot as any)?.is_sold ? (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-[140%] -rotate-12">
-                        <div className="relative bg-shamah-green/90 py-3 md:py-4">
-                          <div className="absolute left-0 right-0 top-0 h-[2px] bg-shamah-orange" />
-                          <div className="absolute left-0 right-0 bottom-0 h-[2px] bg-shamah-orange" />
-                          <div
-                            className="text-center text-4xl md:text-5xl font-extrabold tracking-[0.2em] text-red-600"
-                            style={{ WebkitTextStroke: "1px white" }}
-                          >
-                            SOLD
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
 
                 {/* Gallery */}

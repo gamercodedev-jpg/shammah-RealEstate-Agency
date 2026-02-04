@@ -2,9 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
-import { supabase } from "@/integrations/supabase/client";
 import type { Feed } from "@/types/database";
-import { publicStorageUrl } from "@/integrations/supabase/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -19,6 +17,9 @@ export default function NewsDetails() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioAutoplayBlocked, setAudioAutoplayBlocked] = useState(false);
 
+  const API_BASE_URL =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
+
   useEffect(() => {
     let mounted = true;
 
@@ -31,19 +32,39 @@ export default function NewsDetails() {
 
       setLoading(true);
       setError(null);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/news`);
+        if (!res.ok) throw new Error("Failed to load news");
+        const raw = await res.json();
+        const rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
+          id: String(row.id),
+          title: row.headline ?? "",
+          content: row.content ?? "",
+          image_url: row.image_url ?? "",
+          video_url: null,
+          audio_url: null,
+          is_published: true,
+          created_at: row.published_at ?? null,
+          updated_at: row.published_at ?? null,
+        })) as Feed[];
 
-      const { data, error } = await supabase.from("feeds").select("*").eq("id", id).single();
+        const match = rows.find((r) => String(r.id) === String(id));
+        if (!mounted) return;
 
-      if (!mounted) return;
+        if (!match) {
+          setError("This news item does not exist.");
+          setFeed(null);
+        } else {
+          setFeed(match);
+        }
 
-      if (error) {
-        setError(error.message);
+        setLoading(false);
+      } catch (err: any) {
+        if (!mounted) return;
+        setError(err?.message || "Failed to load news");
         setFeed(null);
-      } else {
-        setFeed((data as Feed) || null);
+        setLoading(false);
       }
-
-      setLoading(false);
     })();
 
     return () => {
@@ -53,9 +74,9 @@ export default function NewsDetails() {
 
   const title = feed?.title || "News";
   const createdAt = feed?.created_at ? new Date(feed.created_at) : null;
-  const imageSrc = publicStorageUrl(feed?.image_url || "") || feed?.image_url || "";
-  const videoSrc = publicStorageUrl(feed?.video_url || "") || feed?.video_url || "";
-  const audioSrc = publicStorageUrl(feed?.audio_url || "") || feed?.audio_url || "";
+  const imageSrc = feed?.image_url || "";
+  const videoSrc = feed?.video_url || "";
+  const audioSrc = feed?.audio_url || "";
 
   useEffect(() => {
     setAudioAutoplayBlocked(false);

@@ -1,67 +1,46 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import type { Feed } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
-import { publicStorageUrl } from "@/integrations/supabase/utils";
 import { Link } from "react-router-dom";
 
 export function NewsSection() {
   const [feeds, setFeeds] = useState<Feed[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const adminEndpoint = import.meta.env.VITE_ADMIN_INSERT_ENDPOINT as string | undefined;
-  const useAdminReads = (import.meta.env.VITE_USE_ADMIN_ENDPOINT_FOR_READS as string | undefined) === "true";
+
+  const API_BASE_URL =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data, error } = await supabase
-        .from("feeds")
-        .select("*")
-        // Treat null as published for legacy rows
-        .or("is_published.is.true,is_published.is.null")
-        .order("created_at", { ascending: false })
-        .limit(3);
-      if (!mounted) return;
-      if (error) {
-        // Fallback: try service-role proxy if configured (for cases where RLS blocks anon read)
-        if (useAdminReads && adminEndpoint) {
-          try {
-            const res = await fetch(adminEndpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "select", table: "feeds", publishedOnly: true, limit: 3 }),
-            });
-            const json = await res.json();
-            if (res.ok && json?.data) {
-              setError(null);
-              setFeeds((json.data as Feed[]) || []);
-              return;
-            }
-          } catch {
-            // ignore and fall through
-          }
-        }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/news`);
+        if (!res.ok) throw new Error("Failed to load news");
+        const raw = await res.json();
+        let rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
+          id: String(row.id),
+          title: row.headline ?? "",
+          content: row.content ?? "",
+          image_url: row.image_url ?? "",
+          video_url: null,
+          audio_url: null,
+          is_published: true,
+          created_at: row.published_at ?? null,
+          updated_at: row.published_at ?? null,
+        })) as Feed[];
 
-        console.error("Failed to load feeds", error);
-        setError(error.message);
-        setFeeds([]);
-        return;
-      }
-      const rows = ((data as Feed[]) || []) as Feed[];
-      if (rows.length === 0) {
-        // Fallback: show latest feeds even if not marked published yet
-        const res2 = await supabase.from("feeds").select("*").order("created_at", { ascending: false }).limit(3);
-        if (res2.error) {
-          setError(res2.error.message);
-          setFeeds([]);
-          return;
-        }
+        rows = rows.slice(0, 3);
+
+        if (!mounted) return;
         setError(null);
-        setFeeds(((res2.data as Feed[]) || []) as Feed[]);
-        return;
+        setFeeds(rows);
+      } catch (err: any) {
+        if (!mounted) return;
+        // eslint-disable-next-line no-console
+        console.error("Failed to load feeds", err);
+        setError(err?.message || "Unable to load news.");
+        setFeeds([]);
       }
-      setError(null);
-      setFeeds(rows);
     })();
     return () => { mounted = false; };
   }, []);
@@ -91,7 +70,7 @@ export function NewsSection() {
                 <Link to={`/news/${f.id}`} className="block">
                   {f.image_url && (
                     <img
-                      src={publicStorageUrl(f.image_url) || f.image_url || ""}
+                      src={f.image_url || ""}
                       alt={f.title}
                       className="h-40 w-full object-cover"
                     />

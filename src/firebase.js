@@ -1,0 +1,16 @@
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDxU0mm3NQGjLL5bmDcrbwbCyPmnHmaf4M",
+  authDomain: "shammah-production-v1.firebaseapp.com",
+  projectId: "shammah-production-v1",
+  storageBucket: "shammah-production-v1.firebasestorage.app",
+  messagingSenderId: "809031646073",
+  appId: "1:809031646073:web:12c429415df65d2e1a8da8",
+};
+
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const storage = getStorage(app);

@@ -1,66 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { supabase } from "@/integrations/supabase/client";
-import { publicStorageUrl } from "@/integrations/supabase/utils";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowUpRight, PlayCircle } from "lucide-react";
-
 import { playGlobalAudio } from "@/hooks/use-global-audio";
 export default function News() {
   const [feeds, setFeeds] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const adminEndpoint = import.meta.env.VITE_ADMIN_INSERT_ENDPOINT as string | undefined;
-  const useAdminReads = (import.meta.env.VITE_USE_ADMIN_ENDPOINT_FOR_READS as string | undefined) === "true";
   const navigate = useNavigate();
+
+  const API_BASE_URL =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
 
   useEffect(() => {
     (async () => {
-      const { data, error } = await supabase
-        .from("feeds")
-        .select("*")
-        // Treat null as published for legacy rows
-        .or("is_published.is.true,is_published.is.null")
-        .order("created_at", { ascending: false });
-      if (error) {
-        // Fallback: try service-role proxy if configured
-        if (useAdminReads && adminEndpoint) {
-          try {
-            const res = await fetch(adminEndpoint, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "select", table: "feeds", publishedOnly: true, limit: 50 }),
-            });
-            const json = await res.json();
-            if (res.ok && json?.data) {
-              setError(null);
-              setFeeds((json.data as any[]) || []);
-              return;
-            }
-          } catch {
-            // ignore and fall through
-          }
-        }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/news`);
+        if (!res.ok) throw new Error("Failed to load news");
+        const raw = await res.json();
+        let rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
+          id: String(row.id),
+          title: row.headline ?? "",
+          content: row.content ?? "",
+          image_url: row.image_url ?? "",
+          video_url: null,
+          audio_url: null,
+          is_published: true,
+          created_at: row.published_at ?? null,
+        }));
 
-        console.error("Failed to load feeds", error);
-        setError(error.message);
-        setFeeds([]);
-        return;
-      }
-      const rows = (data as any[]) || [];
-      if (rows.length === 0) {
-        const res2 = await supabase.from("feeds").select("*").order("created_at", { ascending: false });
-        if (res2.error) {
-          setError(res2.error.message);
-          setFeeds([]);
-          return;
-        }
         setError(null);
-        setFeeds((res2.data as any[]) || []);
-        return;
+        setFeeds(rows);
+      } catch (err: any) {
+        // eslint-disable-next-line no-console
+        console.error("Failed to load feeds", err);
+        setError(err?.message || "Failed to load news");
+        setFeeds([]);
       }
-      setError(null);
-      setFeeds(rows);
     })();
   }, []);
 
@@ -77,7 +53,7 @@ export default function News() {
           <article className="mb-8 rounded overflow-hidden relative">
             <Link to={`/news/${featured.id}`} className="block">
               <img
-                src={publicStorageUrl(featured.image_url || "") || featured.image_url || "/placeholder.svg"}
+                src={featured.image_url || "/placeholder.svg"}
                 alt={featured.title}
                 className="w-full h-72 object-cover"
               />
@@ -97,7 +73,7 @@ export default function News() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {rest.map((f) => (
             (() => {
-              const coverSrc = publicStorageUrl(f.image_url || "") || f.image_url || "/placeholder.svg";
+              const coverSrc = f.image_url || "/placeholder.svg";
               const isPublished = f.is_published === true || f.is_published === null;
               const createdAt = f.created_at ? new Date(f.created_at).toLocaleDateString() : "";
               return (
@@ -159,7 +135,7 @@ export default function News() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        playGlobalAudio(publicStorageUrl(f.audio_url) || f.audio_url);
+                        playGlobalAudio(f.audio_url);
                       }}
                     >
                       Play

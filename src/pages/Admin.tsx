@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { supabase } from "@/integrations/supabase/client";
 import type { Plot, Feed } from "@/types/database";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -10,8 +9,10 @@ import { toast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
 
-const BUCKET_NAME = "shamah-media";
 const SHAMAH_LOGO_URL = "/shammah-logo.png";
+
+const API_BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) || "http://localhost:4000";
 
 function uniqueFilePath(file: File) {
   return `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
@@ -30,7 +31,6 @@ export default function Admin() {
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<"plots" | "news">("plots");
-  const [soldUpdatingId, setSoldUpdatingId] = useState<string | null>(null);
 
   // Form State
   const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
@@ -38,7 +38,7 @@ export default function Admin() {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [priceZmw, setPriceZmw] = useState(0);
-  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [plotImageFile, setPlotImageFile] = useState<File | null>(null);
 
   // News/Feed form state
   const [editingFeed, setEditingFeed] = useState<Feed | null>(null);
@@ -47,8 +47,6 @@ export default function Admin() {
   const [feedPublished, setFeedPublished] = useState(true);
   const [feedImageUrl, setFeedImageUrl] = useState("");
   const [feedImageFile, setFeedImageFile] = useState<File | null>(null);
-  const [feedVideoFile, setFeedVideoFile] = useState<File | null>(null);
-  const [feedAudioFile, setFeedAudioFile] = useState<File | null>(null);
 
   function getMasterKey() {
     return window.localStorage.getItem("shammah_key") || "Shammah2026";
@@ -102,35 +100,58 @@ export default function Admin() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const { data: plotsData, error: plotsError } = await supabase
-        .from("plots")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const [plotsRes, newsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/plots`),
+        fetch(`${API_BASE_URL}/api/news`),
+      ]);
 
-      if (plotsError) throw plotsError;
-      setPlots(((plotsData as unknown) as Plot[]) || []);
+      if (!plotsRes.ok) throw new Error("Failed to load plots");
+      if (!newsRes.ok) throw new Error("Failed to load news");
 
-      const { data: feedsData, error: feedsError } = await supabase
-        .from("feeds")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const plotsRaw = await plotsRes.json();
+      const newsRaw = await newsRes.json();
 
-      if (feedsError) {
-        const status = (feedsError as any)?.status;
-        if (status === 404) {
-          setFeeds([]);
-          toast({
-            title: "News not set up",
-            description:
-              "Your Supabase project is missing the feeds table. Run supabase/migrations/20260125_one_click_setup_free_mode.sql in Supabase SQL Editor.",
-            variant: "destructive",
-          });
-        } else {
-          throw feedsError;
-        }
-      } else {
-        setFeeds(((feedsData as unknown) as Feed[]) || []);
-      }
+      const mappedPlots: Plot[] = (Array.isArray(plotsRaw) ? plotsRaw : []).map((row: any) => {
+        const images = row.image_url ? [row.image_url] : [];
+        return {
+          id: String(row.id ?? ""),
+          title: row.title ?? "",
+          description: null,
+          location: row.location ?? "",
+          size_sqm: 0,
+          price_zmw: Number(row.price_zmw ?? 0),
+          price_usd: 0,
+          status: "available",
+          is_sold: null,
+          is_titled: false,
+          has_road_access: null,
+          has_water: null,
+          has_electricity: null,
+          soil_type: null,
+          distance_from_road: null,
+          images,
+          video_url: null,
+          audio_url: null,
+          is_featured: null,
+          created_at: row.created_at ?? new Date().toISOString(),
+          updated_at: row.created_at ?? new Date().toISOString(),
+        } as Plot;
+      });
+
+      const mappedFeeds: Feed[] = (Array.isArray(newsRaw) ? newsRaw : []).map((row: any) => ({
+        id: String(row.id ?? ""),
+        title: row.headline ?? "",
+        content: row.content ?? "",
+        image_url: row.image_url ?? "",
+        video_url: null,
+        audio_url: null,
+        is_published: true,
+        created_at: row.published_at ?? new Date().toISOString(),
+        updated_at: row.published_at ?? new Date().toISOString(),
+      }));
+
+      setPlots(mappedPlots);
+      setFeeds(mappedFeeds);
     } catch (err) {
       console.error(err);
     } finally {
@@ -143,43 +164,31 @@ export default function Admin() {
     setLoading(true);
 
     try {
-      async function uploadToBucket(file: File) {
-        const path = uniqueFilePath(file);
-        const { error } = await supabase.storage.from(BUCKET_NAME).upload(path, file);
-        if (error) {
-          if (isBucketNotFoundError(error)) {
-            toast({
-              title: "Storage bucket not found",
-              description: `Create a Supabase Storage bucket named "${BUCKET_NAME}" (Storage → Buckets) and make it public.`,
-              variant: "destructive",
-            });
-          }
-          throw error;
-        }
-        const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
-        return data.publicUrl;
+      if (!feedImageFile) {
+        toast({
+          title: "Image required",
+          description: "Please choose an image for this news item.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      const uploadedImageUrl = feedImageFile ? await uploadToBucket(feedImageFile) : null;
-      const uploadedVideoUrl = feedVideoFile ? await uploadToBucket(feedVideoFile) : null;
-      const uploadedAudioUrl = feedAudioFile ? await uploadToBucket(feedAudioFile) : null;
+      const formData = new FormData();
+      formData.append("headline", feedTitle);
+      formData.append("content", feedContent);
+      formData.append("author", "Admin");
+      formData.append("image", feedImageFile);
 
-      const payload = {
-        title: feedTitle,
-        content: feedContent,
-        is_published: feedPublished,
-        image_url: (uploadedImageUrl || (feedImageUrl.trim() ? feedImageUrl.trim() : null)) as string | null,
-        video_url: uploadedVideoUrl as string | null,
-        audio_url: uploadedAudioUrl as string | null,
-      };
+      const res = await fetch(`${API_BASE_URL}/api/news`, {
+        method: "POST",
+        body: formData,
+      });
 
-      if (editingFeed) {
-        await supabase.from("feeds").update(payload as any).eq("id", editingFeed.id);
-        toast({ title: "Success", description: "News updated" });
-      } else {
-        await supabase.from("feeds").insert([payload as any] as any);
-        toast({ title: "Success", description: "News posted" });
+      if (!res.ok) {
+        throw new Error("Failed to save news item");
       }
+
+      toast({ title: "Success", description: "News posted" });
 
       setEditingFeed(null);
       setFeedTitle("");
@@ -187,8 +196,6 @@ export default function Admin() {
       setFeedPublished(true);
       setFeedImageUrl("");
       setFeedImageFile(null);
-      setFeedVideoFile(null);
-      setFeedAudioFile(null);
       fetchAll();
     } catch (err: any) {
       toast({ title: "Error", description: err?.message || "Failed to save news", variant: "destructive" });
@@ -199,12 +206,15 @@ export default function Admin() {
 
   const handleDeleteFeed = async (id: string) => {
     if (!confirm("Delete this news post?")) return;
-    const { error } = await supabase.from("feeds").delete().eq("id", id);
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-      return;
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/news/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204 && res.status !== 404) {
+        throw new Error("Failed to delete news item");
+      }
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: "Error", description: err?.message || "Failed to delete news item", variant: "destructive" });
     }
-    fetchAll();
   };
 
   async function handlePlotSave(e: React.FormEvent) {
@@ -212,47 +222,41 @@ export default function Admin() {
     setLoading(true);
 
     try {
-      let filenames: string[] = editingPlot?.images || [];
-
-      if (imageFiles.length > 0) {
-        const uploads = await Promise.all(
-          imageFiles.map(async (file) => {
-            const name = `${Date.now()}_${file.name}`;
-            await supabase.storage.from(BUCKET_NAME).upload(name, file);
-            return name;
-          })
-        );
-        filenames = editingPlot ? [...filenames, ...uploads] : uploads;
+      if (!plotImageFile) {
+        toast({
+          title: "Image required",
+          description: "Please choose an image for this listing.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      const payload: Partial<Plot> & Record<string, unknown> = {
-        title,
-        description,
-        location,
-        price_zmw: priceZmw,
-        // Required by the generated Supabase types in many projects.
-        // If your DB columns differ, Supabase will return a runtime error.
-        price_usd: (editingPlot as any)?.price_usd ?? 0,
-        size_sqm: (editingPlot as any)?.size_sqm ?? 0,
-        is_titled: (editingPlot as any)?.is_titled ?? false,
-        images: filenames,
-        is_featured: true,
-        status: "available",
-      };
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("location", location);
+      formData.append("price_zmw", String(priceZmw));
+      formData.append("image", plotImageFile);
 
-      if (editingPlot) {
-        await supabase.from("plots").update(payload as any).eq("id", editingPlot.id);
-        toast({ title: "Success", description: "Plot updated" });
-      } else {
-        await supabase.from("plots").insert([payload as any] as any);
-        toast({ title: "Success", description: "Plot added" });
+      const res = await fetch(`${API_BASE_URL}/api/plots`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to save plot");
       }
+
+      toast({ title: "Success", description: "Plot added" });
 
       // Reset form
-      setEditingPlot(null); setTitle(""); setDescription(""); setLocation(""); setPriceZmw(0); setImageFiles([]);
+      setEditingPlot(null);
+      setTitle("");
+      setLocation("");
+      setPriceZmw(0);
+      setPlotImageFile(null);
       fetchAll();
     } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Error", description: err.message || "Failed to save plot", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -260,22 +264,14 @@ export default function Admin() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this listing?")) return;
-    await supabase.from("plots").delete().eq("id", id);
-    fetchAll();
-  };
-
-  const handleToggleSold = async (plotId: string, isSold: boolean) => {
-    setSoldUpdatingId(plotId);
-    const previous = plots;
-    setPlots((curr) => curr.map((p) => (p.id === plotId ? ({ ...p, is_sold: isSold } as Plot) : p)));
     try {
-      const { error } = await supabase.from("plots").update({ is_sold: isSold } as any).eq("id", plotId);
-      if (error) throw error;
+      const res = await fetch(`${API_BASE_URL}/api/plots/${id}`, { method: "DELETE" });
+      if (!res.ok && res.status !== 204 && res.status !== 404) {
+        throw new Error("Failed to delete listing");
+      }
+      fetchAll();
     } catch (err: any) {
-      setPlots(previous);
-      toast({ title: "Error", description: err?.message || "Failed to update sold status", variant: "destructive" });
-    } finally {
-      setSoldUpdatingId(null);
+      toast({ title: "Error", description: err?.message || "Failed to delete listing", variant: "destructive" });
     }
   };
 
@@ -308,8 +304,14 @@ export default function Admin() {
               <Input placeholder="Plot Title" value={title} onChange={e => setTitle(e.target.value)} required />
               <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} required />
               <Input type="number" placeholder="Price (ZMW)" value={priceZmw} onChange={e => setPriceZmw(Number(e.target.value))} required />
-              <Textarea placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
-              <Input type="file" multiple accept="image/*" onChange={e => setImageFiles(Array.from(e.target.files || []))} />
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  setPlotImageFile(file);
+                }}
+              />
               <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
                 {loading ? "Saving..." : "Save Plot to Database"}
               </Button>
@@ -320,7 +322,7 @@ export default function Admin() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
-                    <TableHead>Sold</TableHead>
+                    <TableHead>Price (ZMW)</TableHead>
                     <TableHead className="text-right">Action</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -328,13 +330,7 @@ export default function Admin() {
                   {plots.map(p => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.title}</TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={!!(p as any).is_sold}
-                          onCheckedChange={(checked) => handleToggleSold(p.id, checked)}
-                          disabled={soldUpdatingId === p.id}
-                        />
-                      </TableCell>
+                      <TableCell>{p.price_zmw}</TableCell>
                       <TableCell className="text-right space-x-2">
                         <Button size="sm" variant="outline" onClick={() => { setEditingPlot(p); setTitle(p.title); setLocation(p.location || ""); setPriceZmw(p.price_zmw || 0); }}>Edit</Button>
                         <Button size="sm" variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>
@@ -354,19 +350,15 @@ export default function Admin() {
               <Textarea placeholder="Write your news content..." value={feedContent} onChange={e => setFeedContent(e.target.value)} className="min-h-[160px]" required />
               <div className="space-y-2">
                 <div className="text-sm font-medium">News image</div>
-                <Input type="file" accept="image/*" onChange={(e) => setFeedImageFile((e.target.files?.[0] as File) || null)} />
-                <div className="text-xs text-muted-foreground">Or paste a public image URL:</div>
-                <Input placeholder="Optional image URL (public)" value={feedImageUrl} onChange={e => setFeedImageUrl(e.target.value)} />
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium">News video (optional)</div>
-                <Input type="file" accept="video/*" onChange={(e) => setFeedVideoFile((e.target.files?.[0] as File) || null)} />
-              </div>
-
-              <div className="space-y-2">
-                <div className="text-sm font-medium">News audio (optional)</div>
-                <Input type="file" accept="audio/*" onChange={(e) => setFeedAudioFile((e.target.files?.[0] as File) || null)} />
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0] as File | undefined;
+                    setFeedImageFile(file || null);
+                  }}
+                />
+                <div className="text-xs text-muted-foreground">Choose an image to display with this news post.</div>
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={feedPublished} onChange={(e) => setFeedPublished(e.target.checked)} />
@@ -402,8 +394,6 @@ export default function Admin() {
                             setFeedPublished(f.is_published !== false);
                             setFeedImageUrl(f.image_url || "");
                             setFeedImageFile(null);
-                            setFeedVideoFile(null);
-                            setFeedAudioFile(null);
                           }}
                         >
                           Edit
