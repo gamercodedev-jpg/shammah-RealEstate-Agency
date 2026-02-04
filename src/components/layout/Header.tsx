@@ -52,6 +52,10 @@ export function Header() {
   // Secret 5-tap login (5 taps within 3 seconds)
   const tapTimesRef = useRef<number[]>([]);
 
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [masterKeyInput, setMasterKeyInput] = useState("");
+  const [adminError, setAdminError] = useState("");
+
   function getMasterKey() {
     return window.localStorage.getItem("shammah_key") || "Shammah2026";
   }
@@ -64,20 +68,30 @@ export function Header() {
 
     if (tapTimesRef.current.length >= 5) {
       tapTimesRef.current = [];
+      setMasterKeyInput("");
+      setAdminError("");
+      setShowAdminModal(true);
+    }
+  };
 
-      const input = window.prompt("Master Access Key");
-      const key = getMasterKey();
+  const closeAdminModal = () => {
+    setShowAdminModal(false);
+    setMasterKeyInput("");
+    setAdminError("");
+  };
 
-      if (input !== key) {
-        window.alert("Access Denied");
-        return;
-      }
+  const validateMasterKey = () => {
+    const enteredKey = masterKeyInput.trim();
+    const correctKey = getMasterKey();
 
-      // Mark this session as authorized so /admin doesn't reprompt.
+    if (enteredKey === correctKey) {
       window.sessionStorage.setItem("shammah_admin_authed", "1");
-
-      // Redirect as requested
-      window.location.href = "/admin.html";
+      setShowAdminModal(false);
+      setAdminError("");
+      window.location.href = "/admin";
+    } else {
+      setMasterKeyInput("");
+      setAdminError("Incorrect key. Access denied.");
     }
   };
 
@@ -207,6 +221,114 @@ export function Header() {
           {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
+
+      {showAdminModal && (
+        <div
+          id="adminModal"
+          onClick={closeAdminModal}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 9999,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              padding: "40px",
+              borderRadius: "15px",
+              width: "100%",
+              maxWidth: "400px",
+              textAlign: "center",
+              position: "relative",
+              boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
+            }}
+          >
+            <img
+              src="/shammah-logo.png"
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                opacity: 0.05,
+                width: "80%",
+                pointerEvents: "none",
+              }}
+            />
+
+            <h2 style={{ color: "#004a99", marginBottom: "10px" }}>Mthunzi-Tech Security</h2>
+            <p style={{ color: "#666", fontSize: "14px", marginBottom: "20px" }}>
+              Authorized Shammah Personnel Only
+            </p>
+
+            <input
+              type="password"
+              placeholder="Enter Master Key"
+              value={masterKeyInput}
+              onChange={(e) => setMasterKeyInput(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                marginBottom: "20px",
+                border: "1px solid #ddd",
+                borderRadius: "8px",
+                fontSize: "16px",
+              }}
+            />
+
+            {adminError && (
+              <p
+                style={{
+                  color: "#e11d48",
+                  fontSize: "13px",
+                  marginBottom: "16px",
+                }}
+              >
+                {adminError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={validateMasterKey}
+              style={{
+                width: "100%",
+                padding: "12px",
+                background: "#004a99",
+                color: "white",
+                border: "none",
+                borderRadius: "8px",
+                cursor: "pointer",
+                fontWeight: "bold",
+              }}
+            >
+              Login to Admin Panel
+            </button>
+
+            <button
+              type="button"
+              onClick={closeAdminModal}
+              style={{
+                marginTop: "15px",
+                background: "none",
+                border: "none",
+                color: "#999",
+                cursor: "pointer",
+                fontSize: "12px",
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Mobile Navigation */}
       {isMenuOpen && (

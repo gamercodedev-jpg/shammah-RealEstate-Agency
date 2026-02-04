@@ -56,17 +56,8 @@ export default function Admin() {
 
   function ensureAdminAuthorized() {
     if (window.sessionStorage.getItem("shammah_admin_authed") === "1") return true;
-
-    const input = window.prompt("Master Access Key");
-    const key = getMasterKey();
-    if (input !== key) {
-      window.alert("Access Denied");
-      navigate("/");
-      return false;
-    }
-
-    window.sessionStorage.setItem("shammah_admin_authed", "1");
-    return true;
+    navigate("/");
+    return false;
   }
 
   function changeAdminPassword() {
@@ -75,7 +66,7 @@ export default function Admin() {
 
     const key = getMasterKey();
     if (current !== key) {
-      window.alert("Access Denied");
+      toast({ title: "Access denied", description: "Current password is incorrect", variant: "destructive" });
       return;
     }
 
@@ -86,17 +77,17 @@ export default function Admin() {
     if (confirmNext == null) return;
 
     if (next !== confirmNext) {
-      window.alert("Passwords do not match");
+      toast({ title: "Passwords do not match", description: "Please re-enter matching passwords.", variant: "destructive" });
       return;
     }
 
     if (next.trim().length < 6) {
-      window.alert("Password must be at least 6 characters");
+      toast({ title: "Password too short", description: "Use at least 6 characters.", variant: "destructive" });
       return;
     }
 
     window.localStorage.setItem("shammah_key", next);
-    window.alert("Password updated successfully");
+    toast({ title: "Password updated", description: "Master key changed successfully." });
   }
 
   useEffect(() => {
