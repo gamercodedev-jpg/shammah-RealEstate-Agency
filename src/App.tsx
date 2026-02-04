@@ -15,6 +15,7 @@ import NewsDetails from "./pages/NewsDetails";
 import ProjectSolutions from "./pages/ProjectSolutions";
 import BuildingJourney from "./pages/BuildingJourney";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import AdminLogin from "./pages/AdminLogin";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/properties" element={<Properties />} />
             <Route path="/properties/:id" element={<PropertyDetails />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
