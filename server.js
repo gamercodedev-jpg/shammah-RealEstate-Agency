@@ -158,6 +158,17 @@ app.delete("/api/news/:id", (req, res) => {
   }
 });
 
+// --- STATIC FRONTEND BUILD ---
+
+// Serve the built React app from /dist when running in production mode
+const distPath = path.join(__dirname, "dist");
+app.use(express.static(distPath));
+
+// Fallback: send index.html for any non-API route (SPA routing support)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(distPath, "index.html"));
+});
+
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Shammah API server running on http://localhost:${PORT}`);
