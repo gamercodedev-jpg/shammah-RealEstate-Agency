@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(__dirname, "shammah.db");
+// Use absolute path based on current directory for Linux server compatibility
+const dbPath = path.resolve(process.cwd(), "shammah.db");
+console.log("Database path:", dbPath);
 const db = new Database(dbPath);
 
 // Initialize schema if it doesn't exist

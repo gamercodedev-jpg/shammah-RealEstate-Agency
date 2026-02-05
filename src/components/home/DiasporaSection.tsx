@@ -37,7 +37,7 @@ export function DiasporaSection() {
 
             <p className="text-muted-foreground mb-8">
               Whether you're in the UK, USA, South Africa, or anywhere else, 
-              shamah Real Estate Agency Limited makes it easy for you to invest in prime Zambian land. 
+              Shammah Real Estate Limited makes it easy for you to invest in prime Zambian land. 
               Our dedicated diaspora services include virtual property tours, 
               international payment options, and comprehensive investment guidance.
             </p>

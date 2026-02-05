@@ -48,7 +48,7 @@ export function WhyShammah() {
             Why Choose <span className="text-primary">shamah</span>?
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            For over a decade, shamah Real Estate Agency Limited has been the trusted name in Zambian land investment. 
+            For over a decade, Shammah Real Estate Limited has been the trusted name in Zambian land investment. 
             Our commitment to integrity and customer success sets us apart.
           </p>
         </div>

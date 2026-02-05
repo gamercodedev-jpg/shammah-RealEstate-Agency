@@ -4,39 +4,26 @@ import multer from "multer";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
-import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 
 import db from "./db.js";
+import config from "./config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment variables for local development from .env.local in project root.
-// We avoid loading the legacy .env (which contains old Firebase code, not key=value pairs).
-dotenv.config({ path: path.join(process.cwd(), ".env.local") });
-
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = config.port;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Cloudinary from environment variables
+// Configure Cloudinary from config (which has environment fallbacks)
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Simple runtime check so missing keys are obvious in logs
-// (does not print actual secrets)
-// eslint-disable-next-line no-console
-console.log("Cloudinary env:", {
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  hasKey: !!process.env.CLOUDINARY_API_KEY,
-  hasSecret: !!process.env.CLOUDINARY_API_SECRET,
+  cloud_name: config.cloudinary.cloudName,
+  api_key: config.cloudinary.apiKey,
+  api_secret: config.cloudinary.apiSecret,
 });
 
 // Multer configuration: keep files in memory, then upload to Cloudinary

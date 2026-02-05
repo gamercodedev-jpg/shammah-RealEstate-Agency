@@ -21,7 +21,7 @@ export function HeroSection() {
             Own Your Piece of Zambia
           </h1>
           <p className="text-lg md:text-xl text-primary-foreground/90 mb-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
-            shamah Real Estate Agency Limited – Your trusted partner for secure land investments 
+            Shammah Real Estate Limited – Your trusted partner for secure land investments 
             with transparent documentation and flexible payment plans.
           </p>
           
