@@ -1,0 +1,114 @@
+# Query: shamah
+# ContextLines: 1
+
+30 results - 14 files
+
+public\manifest.json:
+   1  {
+   2:   "short_name": "Shamah",
+   3:   "name": "Shammah Real Estate Agency Limited",
+   4    "icons": [
+
+  13    "theme_color": "#2f855a",
+  14:   "description": "Shamah Real Estate Agency Limited - property listings and enquiries"
+  15  }
+
+public\sw.js:
+  1: const CACHE_NAME = 'shamah-pwa-v2';
+  2  const PRECACHE_URLS = ['/', '/index.html', '/manifest.json', '/icons/icon-192.svg', '/icons/icon-512.svg'];
+
+public\icons\icon-192.svg:
+  7    </g>
+  8:   <text x="50%" y="86%" font-family="Montserrat, sans-serif" font-size="18" fill="#fff" text-anchor="middle">Shamah</text>
+  9  </svg>
+
+public\icons\icon-512.svg:
+  6    </g>
+  7:   <text x="50%" y="86%" font-family="Montserrat, sans-serif" font-size="36" fill="#fff" text-anchor="middle">Shamah</text>
+  8  </svg>
+
+scripts\generate-sw.mjs:
+  26            options: {
+  27:             cacheName: 'shamah-icons',
+  28            },
+
+src\components\home\WhyShamah.tsx:
+  41  
+  42: export function WhyShamah() {
+  43    return (
+
+src\components\layout\Footer.tsx:
+    2  import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from "lucide-react";
+    3: import shamahLogo from "@/assets/shamah-logo.png";
+    4  
+
+   23                <img
+   24:                 src={shamahLogo}
+   25                  alt="Shammah Real Estate Agency Limited"
+
+  150                      [
+  151:                       "Hello Shamah Horizon,",
+  152                        "I would like to open a Hardware Supply Account (pay in installments) for building materials.",
+
+src\components\layout\Header.tsx:
+  12  } from "@/components/ui/dropdown-menu";
+  13: import shamahLogo from "@/assets/shamah-logo.png";
+  14  
+
+  88          <button onClick={handleLogoClick} aria-label="Logo" className="flex items-center gap-2 bg-transparent border-0 p-0">
+  89:           <img src={shamahLogo} alt="Shammah Real Estate Agency Limited" className="h-10 w-auto" />
+  90          </button>
+
+src\pages\Admin.tsx:
+    9  import { toast } from "@/components/ui/use-toast";
+   10: import shamahLogo from "@/assets/shamah-logo.png";
+   11  import { Switch } from "@/components/ui/switch";
+
+  296            className="absolute inset-0 pointer-events-none opacity-[0.06] bg-center bg-no-repeat bg-contain"
+  297:           style={{ backgroundImage: `url(${shamahLogo})` }}
+  298          />
+
+src\pages\BuildingJourney.tsx:
+   15  import { ArrowRight, CheckCircle2, Phone, Sparkles } from "lucide-react";
+   16: import shamahLogo from "@/assets/shamah-logo.png";
+   17  
+
+   63      const lines = [
+   64:       "Hello Shamah Horizon,",
+   65        "I want to start my Building Journey.",
+
+  167            className="absolute inset-0 -z-10 pointer-events-none opacity-[0.03] bg-center bg-no-repeat bg-contain"
+  168:           style={{ backgroundImage: `url(${shamahLogo})` }}
+  169          />
+
+src\pages\Contact.tsx:
+   15  import { Copy, Mail, MessageCircle, Phone, Send } from "lucide-react";
+   16: import shamahLogo from "@/assets/shammah-logo.png";
+   17  
+
+  135      const lines = [
+  136:       "Hello Shamah Horizon,",
+  137        safeName ? `My name is ${safeName}.` : "",
+
+  227            className="absolute inset-0 -z-10 pointer-events-none opacity-[0.025] bg-center bg-no-repeat bg-contain"
+  228:           style={{ backgroundImage: `url(${shamahLogo})` }}
+  229          />
+
+src\pages\Diaspora.tsx:
+  106      const messageLines = [
+  107:       "Hello Shamah Horizon,",
+  108        `I'm enquiring about: ${title}${location ? ` (${location})` : ""}.`,
+
+src\pages\Index.tsx:
+   4  import { FeaturedProperties } from "@/components/home/FeaturedProperties";
+   5: import { WhyShamah } from "@/components/home/WhyShamah";
+   6  import { DiasporaSection } from "@/components/home/DiasporaSection";
+
+  15        <FeaturedProperties />
+  16:       <WhyShamah />
+  17        <DiasporaSection />
+
+src\pages\ProjectSolutions.tsx:
+  43    const materialAccountText = [
+  44:     "Hello Shamah Horizon,",
+  45      "I would like to open a Shammah Material Account and pay in installments.",

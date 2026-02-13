@@ -34,8 +34,8 @@ async function build() {
         },
         {
           urlPattern: /\/api\//,
-          handler: 'NetworkFirst',
-          options: { cacheName: 'api' },
+          // Keep API responses always fresh; do not cache dynamic admin content.
+          handler: 'NetworkOnly',
         },
       ],
     });

@@ -19,6 +19,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// API responses are dynamic (admin can create/delete). Prevent caching so refreshes
+// always reflect the latest server state.
+app.use("/api", (_req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+  next();
+});
+
 // Configure Cloudinary from config (which has environment fallbacks)
 cloudinary.config({
   cloud_name: config.cloudinary.cloudName,
@@ -94,31 +104,29 @@ app.post(
     }
 
     // Insert the main plot record with a primary image URL
-    const stmt = db.prepare(
+    const info = await db.run(
       "INSERT INTO plots (title, location, price_zmw, image_url, video_url, audio_url, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
-    );
-    const info = stmt.run(
-      title,
-      location,
-      Number(price_zmw),
-      primaryImageUrl,
-      videoUrl,
-      audioUrl,
+      [
+        title,
+        location,
+        Number(price_zmw),
+        primaryImageUrl,
+        videoUrl,
+        audioUrl,
+      ],
     );
 
     // Insert all image URLs into plot_images linked to this plot
-    const plotId = Number(info.lastInsertRowid);
-    const insertImageStmt = db.prepare(
-      "INSERT INTO plot_images (plot_id, image_url) VALUES (?, ?)",
-    );
-    const insertImages = db.transaction((urls) => {
-      for (const url of urls) {
-        insertImageStmt.run(plotId, url);
-      }
-    });
-    insertImages(imageUrls);
+    const plotId = Number(info.lastID);
+    for (const url of imageUrls) {
+      // eslint-disable-next-line no-await-in-loop
+      await db.run("INSERT INTO plot_images (plot_id, image_url) VALUES (?, ?)", [
+        plotId,
+        url,
+      ]);
+    }
 
-    const inserted = db.prepare("SELECT * FROM plots WHERE id = ?").get(plotId);
+    const inserted = await db.get("SELECT * FROM plots WHERE id = ?", [plotId]);
     return res.status(201).json({ ...inserted, images: imageUrls });
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -127,15 +135,15 @@ app.post(
   }
 });
 
-app.get("/api/plots", (_req, res) => {
+app.get("/api/plots", async (_req, res) => {
   try {
-    const plots = db.prepare(
+    const plots = await db.all(
       "SELECT * FROM plots ORDER BY datetime(created_at) DESC",
-    ).all();
+    );
 
-    const images = db.prepare(
+    const images = await db.all(
       "SELECT plot_id, image_url FROM plot_images ORDER BY id ASC",
-    ).all();
+    );
 
     const imagesByPlot = new Map();
     for (const row of images) {
@@ -157,7 +165,7 @@ app.get("/api/plots", (_req, res) => {
   }
 });
 
-app.patch("/api/plots/:id/sold", (req, res) => {
+app.patch("/api/plots/:id/sold", async (req, res) => {
   try {
     const id = Number(req.params.id);
     const { is_sold } = req.body ?? {};
@@ -166,14 +174,16 @@ app.patch("/api/plots/:id/sold", (req, res) => {
       return res.status(400).json({ error: "is_sold (boolean) is required" });
     }
 
-    const stmt = db.prepare("UPDATE plots SET is_sold = ? WHERE id = ?");
-    const info = stmt.run(is_sold ? 1 : 0, id);
+    const info = await db.run("UPDATE plots SET is_sold = ? WHERE id = ?", [
+      is_sold ? 1 : 0,
+      id,
+    ]);
 
     if (info.changes === 0) {
       return res.status(404).json({ error: "Plot not found" });
     }
 
-    const updated = db.prepare("SELECT * FROM plots WHERE id = ?").get(id);
+    const updated = await db.get("SELECT * FROM plots WHERE id = ?", [id]);
     return res.json(updated);
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -182,11 +192,10 @@ app.patch("/api/plots/:id/sold", (req, res) => {
   }
 });
 
-app.delete("/api/plots/:id", (req, res) => {
+app.delete("/api/plots/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const stmt = db.prepare("DELETE FROM plots WHERE id = ?");
-    const info = stmt.run(id);
+    const info = await db.run("DELETE FROM plots WHERE id = ?", [id]);
     if (info.changes === 0) {
       return res.status(404).json({ error: "Plot not found" });
     }
@@ -245,12 +254,12 @@ app.post(
       audioUrl = audioResult.secure_url;
     }
 
-    const stmt = db.prepare(
+    const info = await db.run(
       "INSERT INTO news (headline, content, author, image_url, video_url, audio_url, published_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
+      [headline, content, author, imageUrl, videoUrl, audioUrl],
     );
-    const info = stmt.run(headline, content, author, imageUrl, videoUrl, audioUrl);
 
-    const inserted = db.prepare("SELECT * FROM news WHERE id = ?").get(info.lastInsertRowid);
+    const inserted = await db.get("SELECT * FROM news WHERE id = ?", [info.lastID]);
     return res.status(201).json(inserted);
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -259,9 +268,11 @@ app.post(
   }
 });
 
-app.get("/api/news", (_req, res) => {
+app.get("/api/news", async (_req, res) => {
   try {
-    const rows = db.prepare("SELECT * FROM news ORDER BY datetime(published_at) DESC").all();
+    const rows = await db.all(
+      "SELECT * FROM news ORDER BY datetime(published_at) DESC",
+    );
     return res.json(rows);
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -270,11 +281,10 @@ app.get("/api/news", (_req, res) => {
   }
 });
 
-app.delete("/api/news/:id", (req, res) => {
+app.delete("/api/news/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const stmt = db.prepare("DELETE FROM news WHERE id = ?");
-    const info = stmt.run(id);
+    const info = await db.run("DELETE FROM news WHERE id = ?", [id]);
     if (info.changes === 0) {
       return res.status(404).json({ error: "News item not found" });
     }

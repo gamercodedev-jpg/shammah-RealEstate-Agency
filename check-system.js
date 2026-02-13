@@ -6,11 +6,13 @@
 
 import config, { validateConfig } from "./config.js";
 import { v2 as cloudinary } from "cloudinary";
-import Database from "better-sqlite3";
+import sqlite3 from "sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import https from "node:https";
 import http from "node:http";
+
+sqlite3.verbose();
 
 const CHECKS = {
   passed: 0,
@@ -135,43 +137,80 @@ async function checkDatabasePermissions() {
     
     // Test database connection and write
     try {
-      const db = new Database(dbPath);
-      
+      const rawDb = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+          logError(`Database connection error: ${err.message}`);
+        } else {
+          logSuccess("Connected to the SQLite database.");
+        }
+      });
+
+      const exec = (sql) =>
+        new Promise((resolve, reject) => {
+          rawDb.exec(sql, (err) => (err ? reject(err) : resolve()));
+        });
+
+      const run = (sql, params = []) =>
+        new Promise((resolve, reject) => {
+          rawDb.run(sql, params, function onRun(err) {
+            if (err) reject(err);
+            else resolve({ lastID: this.lastID, changes: this.changes });
+          });
+        });
+
+      const get = (sql, params = []) =>
+        new Promise((resolve, reject) => {
+          rawDb.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
+        });
+
+      const all = (sql, params = []) =>
+        new Promise((resolve, reject) => {
+          rawDb.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
+        });
+
+      const close = () =>
+        new Promise((resolve, reject) => {
+          rawDb.close((err) => (err ? reject(err) : resolve()));
+        });
+
       // Try a simple query
-      const info = db.prepare("SELECT sqlite_version() as version").get();
+      const info = await get("SELECT sqlite_version() as version");
       logSuccess(`SQLite version: ${info.version}`);
-      
+
       // Test write operation
-      db.exec("CREATE TABLE IF NOT EXISTS _test_table (id INTEGER PRIMARY KEY)");
-      db.prepare("INSERT INTO _test_table (id) VALUES (?)").run(Date.now());
-      const count = db.prepare("SELECT COUNT(*) as count FROM _test_table").get();
-      db.exec("DROP TABLE _test_table");
-      
+      await exec("CREATE TABLE IF NOT EXISTS _test_table (id INTEGER PRIMARY KEY)");
+      await run("INSERT INTO _test_table (id) VALUES (?)", [Date.now()]);
+      const count = await get("SELECT COUNT(*) as count FROM _test_table");
+      await exec("DROP TABLE _test_table");
+
       logSuccess(`Database write test successful (${count.count} test records)`);
-      
+
       // Check main tables
-      const tables = db.prepare(`
+      const tables = await all(`
         SELECT name FROM sqlite_master 
         WHERE type='table' AND name NOT LIKE 'sqlite_%'
-      `).all();
-      
+      `);
+
       if (tables.length > 0) {
-        logSuccess(`Found ${tables.length} table(s): ${tables.map(t => t.name).join(", ")}`);
-        
+        logSuccess(
+          `Found ${tables.length} table(s): ${tables.map((t) => t.name).join(", ")}`,
+        );
+
         // Check record counts
-        tables.forEach(table => {
+        for (const table of tables) {
           try {
-            const result = db.prepare(`SELECT COUNT(*) as count FROM ${table.name}`).get();
+            // eslint-disable-next-line no-await-in-loop
+            const result = await get(`SELECT COUNT(*) as count FROM ${table.name}`);
             console.log(`   - ${table.name}: ${result.count} records`);
-          } catch (e) {
+          } catch {
             console.log(`   - ${table.name}: [error reading count]`);
           }
-        });
+        }
       } else {
         logWarning("No application tables found in database (fresh install?)");
       }
-      
-      db.close();
+
+      await close();
       return true;
     } catch (dbError) {
       logError(`Database operation failed: ${dbError.message}`);

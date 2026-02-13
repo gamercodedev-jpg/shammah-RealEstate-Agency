@@ -1,4 +1,6 @@
-const CACHE_NAME = 'shamah-pwa-v2';
+// IMPORTANT: Do NOT cache API responses. Caching /api/* can make deleted/updated
+// admin content reappear after refresh due to stale cached JSON.
+const CACHE_NAME = 'shamah-pwa-v3';
 const PRECACHE_URLS = ['/', '/index.html', '/manifest.json', '/icons/icon-192.svg', '/icons/icon-512.svg'];
 
 // Install: pre-cache important resources
@@ -25,6 +27,12 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+
+  // Never cache API responses (even cross-origin). Always hit the network.
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(event.request, { cache: 'no-store' }));
+    return;
+  }
 
   // App shell / navigation requests: serve index.html from cache first
   if (event.request.mode === 'navigate') {
