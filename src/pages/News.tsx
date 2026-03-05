@@ -4,21 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowUpRight, PlayCircle } from "lucide-react";
 import { playGlobalAudio } from "@/hooks/use-global-audio";
+import { fetchApiJson } from "@/lib/api";
 export default function News() {
   const [feeds, setFeeds] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const API_BASE_URL =
-    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-    "https://shammah-realestate-agency.onrender.com";
-
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/news`);
-        if (!res.ok) throw new Error("Failed to load news");
-        const raw = await res.json();
+        const raw = await fetchApiJson<unknown>("/api/news");
         let rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
           id: String(row.id),
           title: row.headline ?? "",

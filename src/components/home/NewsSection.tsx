@@ -2,22 +2,17 @@ import { useEffect, useState } from "react";
 import type { Feed } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
+import { fetchApiJson } from "@/lib/api";
 
 export function NewsSection() {
   const [feeds, setFeeds] = useState<Feed[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const API_BASE_URL =
-    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-    "https://shammah-realestate-agency.onrender.com";
-
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/news`);
-        if (!res.ok) throw new Error("Failed to load news");
-        const raw = await res.json();
+        const raw = await fetchApiJson<unknown>("/api/news");
         let rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
           id: String(row.id),
           title: row.headline ?? "",

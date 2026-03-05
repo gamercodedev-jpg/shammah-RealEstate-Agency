@@ -1,10 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { Plot, PropertyFilters } from "@/types/database";
-
-// Base URL for the API (Render in production, env-configurable)
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  "https://shammah-realestate-agency.onrender.com";
+import { fetchApiJson } from "@/lib/api";
 
 function mapToPlot(row: any): Plot {
   const images: string[] = Array.isArray(row?.images)
@@ -44,11 +40,7 @@ function mapToPlot(row: any): Plot {
 }
 
 async function fetchAllPlots(): Promise<Plot[]> {
-  const res = await fetch(`${API_BASE_URL}/api/plots`);
-  if (!res.ok) {
-    throw new Error("Failed to load plots from local API");
-  }
-  const data = await res.json();
+  const data = await fetchApiJson<unknown>("/api/plots");
   const rows = Array.isArray(data) ? data : [];
   return rows.map(mapToPlot);
 }

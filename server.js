@@ -49,6 +49,14 @@ async function uploadToCloudinary(file, folder, resourceType = "image") {
   });
 }
 
+// Helper function to extract public_id from Cloudinary URL
+function getPublicIdFromUrl(url) {
+  if (!url || typeof url !== "string") return null;
+  // Match the part after /upload/ and before the extension
+  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
+  return match ? match[1] : null;
+}
+
 // --- PLOTS API ---
 
 // Allow up to 10 images plus optional video & audio per plot
@@ -192,9 +200,181 @@ app.patch("/api/plots/:id/sold", async (req, res) => {
   }
 });
 
+app.patch(
+  "/api/plots/:id",
+  upload.fields([
+    { name: "images", maxCount: 10 },
+    { name: "video", maxCount: 1 },
+    { name: "audio", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { title, location, price_zmw } = req.body;
+      const files = req.files || {};
+      const imageFiles = !Array.isArray(files) && files.images ? files.images : [];
+      const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
+      const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
+
+      // Get the current plot
+      const currentPlot = await db.get("SELECT * FROM plots WHERE id = ?", [id]);
+      if (!currentPlot) {
+        return res.status(404).json({ error: "Plot not found" });
+      }
+
+      // Update basic fields
+      const newTitle = title || currentPlot.title;
+      const newLocation = location || currentPlot.location;
+      const newPriceZmw = price_zmw ? Number(price_zmw) : currentPlot.price_zmw;
+
+      let primaryImageUrl = currentPlot.image_url;
+      const existingImages = await db.all(
+        "SELECT image_url FROM plot_images WHERE plot_id = ?",
+        [id],
+      );
+
+      // Handle new images if provided
+      if (imageFiles && imageFiles.length > 0) {
+        // Delete old images from Cloudinary
+        const oldUrls = [currentPlot.image_url, ...existingImages.map((r) => r.image_url)];
+        for (const url of oldUrls) {
+          if (url) {
+            const publicId = getPublicIdFromUrl(url);
+            if (publicId) {
+              try {
+                await cloudinary.uploader.destroy(publicId);
+              } catch (err) {
+                console.error(`Failed to delete old image ${publicId}:`, err);
+              }
+            }
+          }
+        }
+
+        // Upload new images
+        const uploadResults = await Promise.all(
+          imageFiles.map((file) => uploadToCloudinary(file, "shammah/plots")),
+        );
+
+        const imageUrls = uploadResults.map((r) => r.secure_url);
+        primaryImageUrl = imageUrls[0];
+
+        // Clear old plot_images entries
+        await db.run("DELETE FROM plot_images WHERE plot_id = ?", [id]);
+
+        // Insert new image URLs into plot_images
+        for (const url of imageUrls) {
+          // eslint-disable-next-line no-await-in-loop
+          await db.run("INSERT INTO plot_images (plot_id, image_url) VALUES (?, ?)", [
+            id,
+            url,
+          ]);
+        }
+      }
+
+      // Handle new video if provided
+      let videoUrl = currentPlot.video_url;
+      if (videoFile) {
+        const videoResult = await uploadToCloudinary(
+          videoFile,
+          "shammah/plots/videos",
+          "video",
+        );
+        videoUrl = videoResult.secure_url;
+        // Delete old video
+        if (currentPlot.video_url) {
+          const publicId = getPublicIdFromUrl(currentPlot.video_url);
+          if (publicId) {
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.error(`Failed to delete old video ${publicId}:`, err);
+            }
+          }
+        }
+      }
+
+      // Handle new audio if provided
+      let audioUrl = currentPlot.audio_url;
+      if (audioFile) {
+        const audioResult = await uploadToCloudinary(
+          audioFile,
+          "shammah/plots/audio",
+          "video",
+        );
+        audioUrl = audioResult.secure_url;
+        // Delete old audio
+        if (currentPlot.audio_url) {
+          const publicId = getPublicIdFromUrl(currentPlot.audio_url);
+          if (publicId) {
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.error(`Failed to delete old audio ${publicId}:`, err);
+            }
+          }
+        }
+      }
+
+      // Update plot record
+      await db.run(
+        "UPDATE plots SET title = ?, location = ?, price_zmw = ?, image_url = ?, video_url = ?, audio_url = ? WHERE id = ?",
+        [newTitle, newLocation, newPriceZmw, primaryImageUrl, videoUrl, audioUrl, id],
+      );
+
+      const updated = await db.get("SELECT * FROM plots WHERE id = ?", [id]);
+      const images = await db.all(
+        "SELECT plot_id, image_url FROM plot_images WHERE plot_id = ?",
+        [id],
+      );
+      const imageUrls = images.map((r) => r.image_url);
+
+      return res.json({ ...updated, images: imageUrls.length > 0 ? imageUrls : [primaryImageUrl] });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("PATCH /api/plots/:id error", err);
+      return res.status(500).json({ error: "Failed to update plot" });
+    }
+  },
+);
+
 app.delete("/api/plots/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
+    
+    // Get all images for this plot
+    const plotImages = await db.all("SELECT image_url FROM plot_images WHERE plot_id = ?", [id]);
+    const plot = await db.get("SELECT image_url, video_url, audio_url FROM plots WHERE id = ?", [id]);
+    
+    const allUrls = [];
+    if (plot) {
+      if (plot.image_url) allUrls.push(plot.image_url);
+      if (plot.video_url) allUrls.push(plot.video_url);
+      if (plot.audio_url) allUrls.push(plot.audio_url);
+    }
+    plotImages.forEach(img => allUrls.push(img.image_url));
+    
+    // Delete from Cloudinary
+    const deletePromises = allUrls.map(async (url) => {
+      const publicId = getPublicIdFromUrl(url);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId);
+          console.log(`Deleted from Cloudinary: ${publicId}`);
+        } catch (err) {
+          console.error(`Failed to delete ${publicId}:`, err);
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    const results = await Promise.all(deletePromises);
+    if (results.includes(false)) {
+      return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
+    }
+    
+    // Delete from DB
+    await db.run("DELETE FROM plot_images WHERE plot_id = ?", [id]);
     const info = await db.run("DELETE FROM plots WHERE id = ?", [id]);
     if (info.changes === 0) {
       return res.status(404).json({ error: "Plot not found" });
@@ -281,9 +461,139 @@ app.get("/api/news", async (_req, res) => {
   }
 });
 
+app.patch(
+  "/api/news/:id",
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+    { name: "audio", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      const { headline, content, author } = req.body;
+      const files = req.files || {};
+      const imageFile = !Array.isArray(files) && files.image ? files.image[0] : undefined;
+      const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
+      const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
+
+      // Get the current news item
+      const currentItem = await db.get("SELECT * FROM news WHERE id = ?", [id]);
+      if (!currentItem) {
+        return res.status(404).json({ error: "News item not found" });
+      }
+
+      // Upload new image if provided
+      let imageUrl = currentItem.image_url;
+      if (imageFile) {
+        const uploadResult = await uploadToCloudinary(imageFile, "shammah/news");
+        imageUrl = uploadResult.secure_url;
+        // Delete old image from Cloudinary
+        if (currentItem.image_url) {
+          const publicId = getPublicIdFromUrl(currentItem.image_url);
+          if (publicId) {
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.error(`Failed to delete old image ${publicId}:`, err);
+            }
+          }
+        }
+      }
+
+      // Upload new video if provided
+      let videoUrl = currentItem.video_url;
+      if (videoFile) {
+        const videoResult = await uploadToCloudinary(videoFile, "shammah/news/videos", "video");
+        videoUrl = videoResult.secure_url;
+        // Delete old video from Cloudinary
+        if (currentItem.video_url) {
+          const publicId = getPublicIdFromUrl(currentItem.video_url);
+          if (publicId) {
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.error(`Failed to delete old video ${publicId}:`, err);
+            }
+          }
+        }
+      }
+
+      // Upload new audio if provided
+      let audioUrl = currentItem.audio_url;
+      if (audioFile) {
+        const audioResult = await uploadToCloudinary(audioFile, "shammah/news/audio", "video");
+        audioUrl = audioResult.secure_url;
+        // Delete old audio from Cloudinary
+        if (currentItem.audio_url) {
+          const publicId = getPublicIdFromUrl(currentItem.audio_url);
+          if (publicId) {
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.error(`Failed to delete old audio ${publicId}:`, err);
+            }
+          }
+        }
+      }
+
+      // Update in DB
+      await db.run(
+        "UPDATE news SET headline = ?, content = ?, author = ?, image_url = ?, video_url = ?, audio_url = ? WHERE id = ?",
+        [
+          headline || currentItem.headline,
+          content || currentItem.content,
+          author || currentItem.author,
+          imageUrl,
+          videoUrl,
+          audioUrl,
+          id,
+        ],
+      );
+
+      const updated = await db.get("SELECT * FROM news WHERE id = ?", [id]);
+      return res.json(updated);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("PATCH /api/news/:id error", err);
+      return res.status(500).json({ error: "Failed to update news item" });
+    }
+  },
+);
+
 app.delete("/api/news/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
+    
+    // Get the news item
+    const newsItem = await db.get("SELECT image_url, video_url, audio_url FROM news WHERE id = ?", [id]);
+    if (!newsItem) {
+      return res.status(404).json({ error: "News item not found" });
+    }
+    
+    const urls = [newsItem.image_url, newsItem.video_url, newsItem.audio_url].filter(Boolean);
+    
+    // Delete from Cloudinary
+    const deletePromises = urls.map(async (url) => {
+      const publicId = getPublicIdFromUrl(url);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId);
+          console.log(`Deleted from Cloudinary: ${publicId}`);
+        } catch (err) {
+          console.error(`Failed to delete ${publicId}:`, err);
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    const results = await Promise.all(deletePromises);
+    if (results.includes(false)) {
+      return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
+    }
+    
+    // Delete from DB
     const info = await db.run("DELETE FROM news WHERE id = ?", [id]);
     if (info.changes === 0) {
       return res.status(404).json({ error: "News item not found" });

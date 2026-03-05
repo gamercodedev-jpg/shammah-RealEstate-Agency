@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { fetchApiJson } from "@/lib/api";
 
 export default function NewsDetails() {
   const { id } = useParams<{ id: string }>();
@@ -16,10 +17,6 @@ export default function NewsDetails() {
   const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [audioAutoplayBlocked, setAudioAutoplayBlocked] = useState(false);
-
-  const API_BASE_URL =
-    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-    "https://shammah-realestate-agency.onrender.com";
 
   useEffect(() => {
     let mounted = true;
@@ -34,9 +31,7 @@ export default function NewsDetails() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/news`);
-        if (!res.ok) throw new Error("Failed to load news");
-        const raw = await res.json();
+        const raw = await fetchApiJson<unknown>("/api/news");
         const rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
           id: String(row.id),
           title: row.headline ?? "",

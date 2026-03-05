@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
+import { fetchApiJson } from "@/lib/api";
 
 const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
@@ -149,16 +150,10 @@ export default function Admin() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const [plotsRes, newsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/plots`),
-        fetch(`${API_BASE_URL}/api/news`),
+      const [plotsRaw, newsRaw] = await Promise.all([
+        fetchApiJson<unknown>("/api/plots"),
+        fetchApiJson<unknown>("/api/news"),
       ]);
-
-      if (!plotsRes.ok) throw new Error("Failed to load plots");
-      if (!newsRes.ok) throw new Error("Failed to load news");
-
-      const plotsRaw = await plotsRes.json();
-      const newsRaw = await newsRes.json();
 
       const mappedPlots: Plot[] = (Array.isArray(plotsRaw) ? plotsRaw : []).map((row: any) => {
         const images: string[] = Array.isArray(row.images)
@@ -217,7 +212,7 @@ export default function Admin() {
     setLoading(true);
 
     try {
-      if (!feedImageFile) {
+      if (!feedImageFile && !editingFeed) {
         toast({
           title: "Image required",
           description: "Please choose an image for this news item.",
@@ -230,7 +225,9 @@ export default function Admin() {
       formData.append("headline", feedTitle);
       formData.append("content", feedContent);
       formData.append("author", "Admin");
-      formData.append("image", feedImageFile);
+      if (feedImageFile) {
+        formData.append("image", feedImageFile);
+      }
       if (feedVideoFile) {
         formData.append("video", feedVideoFile);
       }
@@ -238,8 +235,13 @@ export default function Admin() {
         formData.append("audio", feedAudioFile);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/news`, {
-        method: "POST",
+      const method = editingFeed ? "PATCH" : "POST";
+      const url = editingFeed
+        ? `${API_BASE_URL}/api/news/${editingFeed.id}`
+        : `${API_BASE_URL}/api/news`;
+
+      const res = await fetch(url, {
+        method,
         body: formData,
       });
 
@@ -247,7 +249,7 @@ export default function Admin() {
         throw new Error("Failed to save news item");
       }
 
-      toast({ title: "Success", description: "News posted" });
+      toast({ title: "Success", description: editingFeed ? "News updated" : "News posted" });
 
       setEditingFeed(null);
       setFeedTitle("");
@@ -283,7 +285,7 @@ export default function Admin() {
     setLoading(true);
 
     try {
-      if (!plotImageFiles.length) {
+      if (!plotImageFiles.length && !editingPlot) {
         toast({
           title: "Image required",
           description: "Please choose at least one image for this listing.",
@@ -306,8 +308,13 @@ export default function Admin() {
         formData.append("audio", plotAudioFile);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/plots`, {
-        method: "POST",
+      const method = editingPlot ? "PATCH" : "POST";
+      const url = editingPlot
+        ? `${API_BASE_URL}/api/plots/${editingPlot.id}`
+        : `${API_BASE_URL}/api/plots`;
+
+      const res = await fetch(url, {
+        method,
         body: formData,
       });
 
@@ -315,7 +322,7 @@ export default function Admin() {
         throw new Error("Failed to save plot");
       }
 
-      toast({ title: "Success", description: "Plot added" });
+      toast({ title: "Success", description: editingPlot ? "Plot updated" : "Plot added" });
 
       // Reset form
       setEditingPlot(null);
@@ -431,9 +438,28 @@ export default function Admin() {
                   {plotAudioFile && <span className="text-xs text-muted-foreground">Voice note attached</span>}
                 </div>
               </div>
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
-                {loading ? "Saving..." : "Save Plot to Database"}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700" disabled={loading}>
+                  {loading ? "Saving..." : editingPlot ? "Update Plot" : "Save Plot to Database"}
+                </Button>
+                {editingPlot && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingPlot(null);
+                      setTitle("");
+                      setLocation("");
+                      setPriceZmw(0);
+                      setPlotImageFiles([]);
+                      setPlotVideoFile(null);
+                      setPlotAudioFile(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </form>
 
             <div className="border rounded-xl bg-white overflow-hidden">
@@ -441,6 +467,7 @@ export default function Admin() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
+                    <TableHead>Location</TableHead>
                     <TableHead>Price (ZMW)</TableHead>
                     <TableHead>Sold</TableHead>
                     <TableHead className="text-right">Action</TableHead>
@@ -450,6 +477,7 @@ export default function Admin() {
                   {plots.map(p => (
                     <TableRow key={p.id}>
                       <TableCell className="font-medium">{p.title}</TableCell>
+                      <TableCell>{p.location}</TableCell>
                       <TableCell>{p.price_zmw}</TableCell>
                       <TableCell>
                         <Switch
@@ -512,9 +540,29 @@ export default function Admin() {
                 <input type="checkbox" checked={feedPublished} onChange={(e) => setFeedPublished(e.target.checked)} />
                 Publish on website
               </label>
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
-                {loading ? "Saving..." : editingFeed ? "Update News" : "Post News"}
-              </Button>
+              <div className="flex gap-2">
+                <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700" disabled={loading}>
+                  {loading ? "Saving..." : editingFeed ? "Update News" : "Post News"}
+                </Button>
+                {editingFeed && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingFeed(null);
+                      setFeedTitle("");
+                      setFeedContent("");
+                      setFeedPublished(true);
+                      setFeedImageUrl("");
+                      setFeedImageFile(null);
+                      setFeedVideoFile(null);
+                      setFeedAudioFile(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                )}
+              </div>
             </form>
 
             <div className="border rounded-xl bg-white overflow-hidden">

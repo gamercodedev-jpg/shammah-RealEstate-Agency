@@ -3,6 +3,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import { fetchApiJson } from "@/lib/api";
 
 const WHATSAPP_NUMBER = "260975705555";
 const ENQUIRY_EMAIL = "alexkabinga83@gmail.com";
@@ -54,6 +56,7 @@ function formatMoney(value: unknown, currency: Currency) {
 export default function Diaspora() {
   const [plots, setPlots] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState<Currency>("USD");
   const [usdToZmw, setUsdToZmw] = useState<number>(DEFAULT_USD_TO_ZMW);
   const [fxIsLive, setFxIsLive] = useState<boolean>(false);
@@ -64,10 +67,6 @@ export default function Diaspora() {
 
   const navigate = useNavigate();
   const listingsRef = useRef<HTMLDivElement | null>(null);
-
-  const API_BASE_URL =
-    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-    "https://shammah-realestate-agency.onrender.com";
 
   const getDisplayPrice = (plot: any, preferredCurrency: Currency) => {
     const priceZmw = toFiniteNumber(plot?.price_zmw);
@@ -130,14 +129,14 @@ export default function Diaspora() {
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/plots`);
-        if (!res.ok) throw new Error("Failed to load plots");
-        const raw = await res.json();
+        const raw = await fetchApiJson<unknown>("/api/plots");
         const rows = Array.isArray(raw) ? raw : [];
+        setError(null);
         setPlots(rows);
-      } catch (err) {
+      } catch (err: any) {
         // eslint-disable-next-line no-console
         console.error("Failed to load plots for Diaspora", err);
+        setError(err?.message || "Unable to load listings.");
         setPlots([]);
       } finally {
         setLoading(false);
@@ -323,6 +322,22 @@ export default function Diaspora() {
       </section>
 
       <section className="container py-12" ref={listingsRef}>
+        {error && !loading ? (
+          <div className="mb-6">
+            <Alert variant="destructive">
+              <AlertTitle>Unable to load listings</AlertTitle>
+              <AlertDescription>
+                {error} <span className="hidden sm:inline">You can try again once you’re back online.</span>
+                <div className="mt-3">
+                  <Button type="button" variant="outline" onClick={() => window.location.reload()}>
+                    Retry
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="p-6 rounded-xl bg-card border border-border/60 hover:border-emerald-500/30 transition">
             <div className="flex items-center gap-3">
