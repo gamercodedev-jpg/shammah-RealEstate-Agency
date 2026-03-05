@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# Database files - NEVER track these!
+*.db
+*.sqlite
+*.sqlite3
+shammah.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
