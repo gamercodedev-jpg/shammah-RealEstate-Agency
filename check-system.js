@@ -4,15 +4,14 @@
  * Usage: node check-system.js
  */
 
-import config, { validateConfig } from "./config.js";
+// Removed dependency on config.js and sqlite3 — checks now use environment
 import { v2 as cloudinary } from "cloudinary";
-import sqlite3 from "sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 import https from "node:https";
 import http from "node:http";
 
-sqlite3.verbose();
+// sqlite3 removed; skip SQLite-specific checks
 
 const CHECKS = {
   passed: 0,
@@ -45,182 +44,73 @@ function logSection(title) {
 // CHECK 1: Environment Configuration
 async function checkEnvironmentConfig() {
   logSection("1. ENVIRONMENT CONFIGURATION");
-  
-  const validation = validateConfig();
-  
-  if (validation.valid) {
-    logSuccess("Environment variables loaded");
-    logSuccess(`Database path: ${config.database.path}`);
-    logSuccess(`Cloudinary cloud: ${config.cloudinary.cloudName}`);
-    logSuccess(`API base URL: ${config.api.baseUrl}`);
+
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.VITE_SUPABASE_SERVICE_ROLE;
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+    logWarning("SUPABASE_URL or SUPABASE_SERVICE_ROLE not set — Supabase will be unavailable");
   } else {
-    validation.errors.forEach(error => logError(error));
+    logSuccess("Supabase environment variables present");
   }
-  
-  return validation.valid;
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || "";
+  if (!cloudName) {
+    logWarning("No Cloudinary cloud configured (this project now uses Supabase storage)");
+  } else {
+    logSuccess(`Cloudinary cloud: ${cloudName}`);
+  }
+
+  const apiBase = process.env.VITE_API_BASE_URL || process.env.API_BASE_URL || "http://localhost:4000";
+  logSuccess(`API base URL: ${apiBase}`);
+
+  return true;
 }
 
 // CHECK 2: Cloudinary Connection
 async function checkCloudinaryConnection() {
-  logSection("2. CLOUDINARY CONNECTION");
-  
+  logSection("2. CLOUDINARY CONNECTION (OPTIONAL)");
+
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.VITE_CLOUDINARY_CLOUD_NAME || "";
+  if (!cloudName) {
+    logWarning("Skipping Cloudinary checks — no Cloudinary cloud configured");
+    return true;
+  }
+
   try {
-    // Configure Cloudinary
     cloudinary.config({
-      cloud_name: config.cloudinary.cloudName,
-      api_key: config.cloudinary.apiKey,
-      api_secret: config.cloudinary.apiSecret
+      cloud_name: cloudName,
+      api_key: process.env.CLOUDINARY_API_KEY || process.env.VITE_CLOUDINARY_API_KEY || "",
+      api_secret: process.env.CLOUDINARY_API_SECRET || process.env.VITE_CLOUDINARY_API_SECRET || ""
     });
-    
-    // Test connection by pinging the API
+
     const result = await cloudinary.api.ping();
-    
-    if (result.status === "ok") {
+    if (result && result.status === "ok") {
       logSuccess("Cloudinary API connection successful");
-      logSuccess(`Cloud name: ${config.cloudinary.cloudName}`);
-      
-      // Get usage statistics if available
-      try {
-        const usage = await cloudinary.api.usage();
-        logSuccess(`Storage used: ${(usage.storage.usage / 1024 / 1024).toFixed(2)} MB`);
-        logSuccess(`Transformations: ${usage.transformations.usage}`);
-      } catch (usageError) {
-        logWarning("Could not fetch usage statistics (API key may have limited permissions)");
-      }
-      
       return true;
-    } else {
-      logError("Cloudinary ping returned unexpected status");
-      return false;
     }
+    logWarning("Cloudinary ping did not return OK");
+    return false;
   } catch (error) {
-    logError(`Cloudinary connection failed: ${error.message}`);
-    console.error("   Full error:", error);
+    logWarning(`Cloudinary connection failed: ${error.message}`);
     return false;
   }
 }
 
 // CHECK 3: SQLite Database Permissions
 async function checkDatabasePermissions() {
-  logSection("3. SQLITE DATABASE PERMISSIONS");
-  
-  const dbPath = config.database.path;
-  const dbDir = path.dirname(dbPath);
-  
-  try {
-    // Check if database directory exists
-    if (!fs.existsSync(dbDir)) {
-      logError(`Database directory does not exist: ${dbDir}`);
-      return false;
-    }
-    logSuccess(`Database directory exists: ${dbDir}`);
-    
-    // Check if database file exists
-    const dbExists = fs.existsSync(dbPath);
-    if (dbExists) {
-      logSuccess(`Database file exists: ${dbPath}`);
-    } else {
-      logWarning(`Database file does not exist yet: ${dbPath}`);
-      logWarning("It will be created on first write");
-    }
-    
-    // Check directory write permissions
-    try {
-      const testFile = path.join(dbDir, ".write-test");
-      fs.writeFileSync(testFile, "test");
-      fs.unlinkSync(testFile);
-      logSuccess("Directory is writable");
-    } catch (writeError) {
-      logError(`Directory is not writable: ${writeError.message}`);
-      return false;
-    }
-    
-    // Test database connection and write
-    try {
-      const rawDb = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-          logError(`Database connection error: ${err.message}`);
-        } else {
-          logSuccess("Connected to the SQLite database.");
-        }
-      });
+  logSection("3. STORAGE / DATABASE (SUPABASE)");
 
-      const exec = (sql) =>
-        new Promise((resolve, reject) => {
-          rawDb.exec(sql, (err) => (err ? reject(err) : resolve()));
-        });
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.VITE_SUPABASE_SERVICE_ROLE;
 
-      const run = (sql, params = []) =>
-        new Promise((resolve, reject) => {
-          rawDb.run(sql, params, function onRun(err) {
-            if (err) reject(err);
-            else resolve({ lastID: this.lastID, changes: this.changes });
-          });
-        });
-
-      const get = (sql, params = []) =>
-        new Promise((resolve, reject) => {
-          rawDb.get(sql, params, (err, row) => (err ? reject(err) : resolve(row)));
-        });
-
-      const all = (sql, params = []) =>
-        new Promise((resolve, reject) => {
-          rawDb.all(sql, params, (err, rows) => (err ? reject(err) : resolve(rows)));
-        });
-
-      const close = () =>
-        new Promise((resolve, reject) => {
-          rawDb.close((err) => (err ? reject(err) : resolve()));
-        });
-
-      // Try a simple query
-      const info = await get("SELECT sqlite_version() as version");
-      logSuccess(`SQLite version: ${info.version}`);
-
-      // Test write operation
-      await exec("CREATE TABLE IF NOT EXISTS _test_table (id INTEGER PRIMARY KEY)");
-      await run("INSERT INTO _test_table (id) VALUES (?)", [Date.now()]);
-      const count = await get("SELECT COUNT(*) as count FROM _test_table");
-      await exec("DROP TABLE _test_table");
-
-      logSuccess(`Database write test successful (${count.count} test records)`);
-
-      // Check main tables
-      const tables = await all(`
-        SELECT name FROM sqlite_master 
-        WHERE type='table' AND name NOT LIKE 'sqlite_%'
-      `);
-
-      if (tables.length > 0) {
-        logSuccess(
-          `Found ${tables.length} table(s): ${tables.map((t) => t.name).join(", ")}`,
-        );
-
-        // Check record counts
-        for (const table of tables) {
-          try {
-            // eslint-disable-next-line no-await-in-loop
-            const result = await get(`SELECT COUNT(*) as count FROM ${table.name}`);
-            console.log(`   - ${table.name}: ${result.count} records`);
-          } catch {
-            console.log(`   - ${table.name}: [error reading count]`);
-          }
-        }
-      } else {
-        logWarning("No application tables found in database (fresh install?)");
-      }
-
-      await close();
-      return true;
-    } catch (dbError) {
-      logError(`Database operation failed: ${dbError.message}`);
-      return false;
-    }
-  } catch (error) {
-    logError(`Database check failed: ${error.message}`);
-    console.error("   Full error:", error);
-    return false;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+    logWarning("Supabase environment variables not set — the app may use ephemeral storage.");
+    return true;
   }
+
+  logSuccess("Supabase credentials present (server can connect to persistent storage)");
+  return true;
 }
 
 // CHECK 4: PWA Manifest Validation

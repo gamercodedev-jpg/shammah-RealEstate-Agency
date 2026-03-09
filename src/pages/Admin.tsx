@@ -37,8 +37,8 @@ export default function Admin() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [priceZmw, setPriceZmw] = useState(0);
-  const [sizeSqm, setSizeSqm] = useState<number>(0);
+  const [priceZmw, setPriceZmw] = useState<string>("");
+  const [sizeSqm, setSizeSqm] = useState<string>("");
   const [plotImageFiles, setPlotImageFiles] = useState<File[]>([]);
   const [plotVideoFile, setPlotVideoFile] = useState<File | null>(null);
   const [plotAudioFile, setPlotAudioFile] = useState<File | null>(null);
@@ -298,8 +298,9 @@ export default function Admin() {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("location", location);
-      formData.append("price_zmw", String(priceZmw));
-      formData.append("size_sqm", String(sizeSqm));
+      // Send numbers only when provided; allow empty to mean unset
+      if (String(priceZmw).trim() !== "") formData.append("price_zmw", String(Number(priceZmw)));
+      if (String(sizeSqm).trim() !== "") formData.append("size_sqm", String(Number(sizeSqm)));
       plotImageFiles.forEach(file => formData.append("images", file));
       if (plotVideoFile) formData.append("video", plotVideoFile);
       if (plotAudioFile) formData.append("audio", plotAudioFile);
@@ -327,8 +328,8 @@ export default function Admin() {
       setEditingPlot(null);
       setTitle("");
       setLocation("");
-      setPriceZmw(0);
-      setSizeSqm(0);
+      setPriceZmw("");
+      setSizeSqm("");
       setPlotImageFiles([]);
       setPlotVideoFile(null);
       setPlotAudioFile(null);
@@ -418,13 +419,13 @@ export default function Admin() {
 
               <div>
                 <div className="text-sm font-medium">Price (ZMW)</div>
-                <Input type="number" placeholder="Numeric value in ZMW" value={priceZmw} onChange={e => setPriceZmw(Number(e.target.value))} required />
+                <Input type="number" placeholder="Numeric value in ZMW" value={priceZmw} onChange={e => setPriceZmw(e.target.value)} required />
                 <div className="text-xs text-muted-foreground">Enter price as a number (no commas).</div>
               </div>
 
               <div>
                 <div className="text-sm font-medium">Size (sqm)</div>
-                <Input type="number" placeholder="Area in square metres" value={sizeSqm} onChange={e => setSizeSqm(Number(e.target.value))} required />
+                <Input type="number" placeholder="Area in square metres" value={sizeSqm} onChange={e => setSizeSqm(e.target.value)} required />
                 <div className="text-xs text-muted-foreground">Enter the plot area in square metres.</div>
               </div>
 
@@ -480,7 +481,8 @@ export default function Admin() {
                       setEditingPlot(null);
                       setTitle("");
                       setLocation("");
-                      setPriceZmw(0);
+                      setPriceZmw("");
+                      setSizeSqm("");
                       setPlotImageFiles([]);
                       setPlotVideoFile(null);
                       setPlotAudioFile(null);
@@ -516,7 +518,13 @@ export default function Admin() {
                         />
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => { setEditingPlot(p); setTitle(p.title); setLocation(p.location || ""); setPriceZmw(p.price_zmw || 0); setSizeSqm(Number((p as any).size_sqm || 0)); }}>Edit</Button>
+                        <Button size="sm" variant="outline" onClick={() => {
+                          setEditingPlot(p);
+                          setTitle(p.title);
+                          setLocation(p.location || "");
+                          setPriceZmw(p.price_zmw ? String(p.price_zmw) : "");
+                          setSizeSqm((p as any).size_sqm ? String((p as any).size_sqm) : "");
+                        }}>Edit</Button>
                         <Button size="sm" variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>
                       </TableCell>
                     </TableRow>
