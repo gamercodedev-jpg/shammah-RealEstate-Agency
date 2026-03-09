@@ -7,6 +7,11 @@ import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
+// Notifications: web-push will be imported dynamically when needed.
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BHumbw1t_9AloftLkAvIUPlQj3w4pZkXIVOgqBvtxd8PAoXlKOTOI1u4pm47W07O_22fZXjy791aX9njY1T4DM4";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || process.env.VAPID_PRIVATE; // allow either name
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@yourdomain.com';
+
 // Load environment variables (prefer .env.local if present)
 const envPath = path.join(process.cwd(), ".env.local");
 if (fs.existsSync(envPath)) {
@@ -77,6 +82,50 @@ async function deleteFromSupabaseStorage(url, bucket) {
   return !error;
 }
 
+// Send a web-push notification to all stored subscriptions
+async function sendNotificationToAll(title, body, urlPath) {
+  try {
+    const webpushModule = await import('web-push');
+    const webpush = webpushModule?.default || webpushModule;
+
+    if (!VAPID_PRIVATE_KEY) {
+      console.warn('VAPID_PRIVATE_KEY not set; skipping push notifications');
+      return;
+    }
+
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+
+    // fetch subscriptions
+    const { data: subs, error } = await supabase.from('notifications').select('id, subscription');
+    if (error) {
+      console.error('Failed to load subscriptions for notifications', error);
+      return;
+    }
+
+    const payload = JSON.stringify({ title, body, url: urlPath });
+
+    for (const row of subs || []) {
+      const sub = row.subscription;
+      try {
+        await webpush.sendNotification(sub, payload);
+      } catch (err) {
+        console.warn('Failed to send push to subscription, removing if expired', err?.statusCode || err);
+        // remove subscription if gone
+        const status = err?.statusCode || (err && err.statusCode);
+        if (status === 404 || status === 410 || (err && /gone|unsubscribed/i.test(String(err)))) {
+          try {
+            await supabase.from('notifications').delete().eq('id', row.id);
+          } catch (delErr) {
+            console.error('Failed to delete expired subscription', delErr);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error('sendNotificationToAll error', err);
+  }
+}
+
 // No Cloudinary logic remains
 
 // --- PLOTS API ---
@@ -138,6 +187,17 @@ app.post(
         .select()
         .single();
       if (insertError) throw insertError;
+
+      // Trigger push notifications to subscribers (fire-and-forget)
+      try {
+        const notifyUrl = `/properties/${created.id}`;
+        const notifyTitle = `New listing: ${title}`;
+        const notifyBody = `${location} • Price: ZMW ${price_zmw}`;
+        sendNotificationToAll(notifyTitle, notifyBody, notifyUrl).catch(err => console.error('notify error', err));
+      } catch (notifyErr) {
+        console.error('Failed to start notification broadcast', notifyErr);
+      }
+
       return res.status(201).json({ ...created, images: imageUrls });
     } catch (err) {
       console.error("POST /api/plots error", err);
@@ -145,6 +205,32 @@ app.post(
     }
   }
 );
+
+// Store push notification subscriptions
+app.post('/api/notifications/subscribe', async (req, res) => {
+  try {
+    const subscription = req.body?.subscription ?? req.body;
+    if (!subscription) return res.status(400).json({ error: 'subscription is required' });
+
+    // Persist subscription in Supabase 'notifications' table
+    // Expected shape: { subscription: {...}, created_at: '...' }
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert([{ subscription, created_at: new Date().toISOString() }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to store subscription', error);
+      return res.status(500).json({ error: error.message || 'Failed to store subscription' });
+    }
+
+    return res.status(201).json({ success: true, id: data?.id ?? null });
+  } catch (err) {
+    console.error('POST /api/notifications/subscribe error', err);
+    return res.status(500).json({ error: 'Failed to subscribe' });
+  }
+});
 
 app.get("/api/plots", async (_req, res) => {
   try {

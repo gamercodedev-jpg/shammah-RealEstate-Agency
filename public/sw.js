@@ -1,3 +1,44 @@
+/* Service Worker to handle push notifications */
+
+self.addEventListener('push', (event) => {
+  const defaultTitle = 'Shammah Notification';
+  try {
+    const data = event.data ? event.data.json() : {};
+    const title = data.title || defaultTitle;
+    const body = data.body || '';
+    const url = data.url || '/';
+    const options = {
+      body,
+      data: { url },
+      icon: '/shammah-logo.png',
+      badge: '/icons/icon-192.png',
+      vibrate: [100, 50, 100],
+      tag: data.tag || `shammah-${Date.now()}`,
+      renotify: true,
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  } catch (err) {
+    event.waitUntil(self.registration.showNotification(defaultTitle, { body: 'You have a new notification', vibrate: [100,50,100] }));
+  }
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification?.data?.url || '/';
+  event.waitUntil(
+    (async () => {
+      const allClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of allClients) {
+        // If the client url already includes the target path, focus it
+        if ('focus' in client && client.url === url) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) return clients.openWindow(url);
+    })()
+  );
+});
 // IMPORTANT: Do NOT cache API responses. Caching /api/* can make deleted/updated
 // admin content reappear after refresh due to stale cached JSON.
 const CACHE_NAME = 'shamah-pwa-v3';

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X, Phone, ChevronDown, Building2, HardHat, Landmark, Sparkles, Video } from "lucide-react";
+import { Menu, X, Phone, ChevronDown, Building2, HardHat, Landmark, Sparkles, Video, Bell } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -180,6 +180,21 @@ export function Header() {
             <Phone className="h-4 w-4" />
             Call Us
           </a>
+          <button
+            title="Enable notifications"
+            onClick={() => {
+              try {
+                localStorage.removeItem('notify_prompt_shown_v1');
+              } catch (e) {}
+              const u = new URL(window.location.href);
+              u.searchParams.set('show_notify_prompt', '1');
+              window.location.href = u.toString();
+            }}
+            className="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80"
+          >
+            <Bell className="h-4 w-4" />
+            Notifications
+          </button>
         </div>
 
         {/* Mobile Menu Button */}
