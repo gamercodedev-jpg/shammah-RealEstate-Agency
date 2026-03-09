@@ -5,17 +5,12 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
-
-// sqlite helper (only used in legacy scripts; production uses Supabase)
 import config from "./config.js";
 
-// Supabase client used for all persistent storage (replaces the ephemeral
-// SQLite file in production). Environment variables must be set on deploy.
-const supabase = createClient(
-  "https://beagmgmrsmfovardrshc.supabase.co",
-  "eyJhbGciOiJI…<your service role key>"
-);
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
   console.warn("⚠️  SUPABASE_URL or SUPABASE_SERVICE_ROLE not set; persistence will fail");
 }
 
@@ -69,16 +64,12 @@ async function deleteFromSupabaseStorage(url, bucket) {
   return !error;
 }
 
-// Helper function to extract public_id from Cloudinary URL
-// No longer needed
+// No Cloudinary logic remains
 
 // --- PLOTS API ---
 
 // Allow up to 10 images plus optional video & audio per plot
 app.post(
-    console.log("POST /api/plots: Using SUPABASE_URL:", process.env.SUPABASE_URL);
-    console.log("POST /api/plots: Using SUPABASE_SERVICE_ROLE:", process.env.SUPABASE_SERVICE_ROLE);
-    console.log("Uploading images to Supabase bucket: plots-images");
   "/api/plots",
   upload.fields([
     { name: "images", maxCount: 10 },
@@ -86,62 +77,60 @@ app.post(
     { name: "audio", maxCount: 1 },
   ]),
   async (req, res) => {
-  try {
-    const { title, location, price_zmw } = req.body;
-    const files = req.files || {};
-    const imageFiles = Array.isArray(files) ? files : files.images || [];
-    const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
-    const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
+    try {
+      const { title, location, price_zmw } = req.body;
+      const files = req.files || {};
+      const imageFiles = Array.isArray(files) ? files : files.images || [];
+      const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
+      const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
 
-    if (!title || !location || !price_zmw) {
-      return res.status(400).json({ error: "title, location, and price_zmw are required" });
+      if (!title || !location || !price_zmw) {
+        return res.status(400).json({ error: "title, location, and price_zmw are required" });
+      }
+
+      if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
+        return res.status(400).json({ error: "At least one image file is required" });
+      }
+      // Upload all images to Supabase Storage
+      const imageUrls = await Promise.all(
+        imageFiles.map((file) => uploadToSupabaseStorage(file, "plots-images")),
+      );
+      const primaryImageUrl = imageUrls[0];
+
+      // Optional video & audio uploads
+      let videoUrl = null;
+      if (videoFile) {
+        videoUrl = await uploadToSupabaseStorage(videoFile, "plots-videos");
+      }
+
+      let audioUrl = null;
+      if (audioFile) {
+        audioUrl = await uploadToSupabaseStorage(audioFile, "plots-audio");
+      }
+
+      // Persist plot to Supabase
+      const { data: created, error: insertError } = await supabase
+        .from("plots")
+        .insert([{
+          title,
+          location,
+          price_zmw: Number(price_zmw),
+          image_url: primaryImageUrl,
+          video_url: videoUrl,
+          audio_url: audioUrl,
+          is_sold: false,
+          images: imageUrls,
+        }])
+        .select()
+        .single();
+      if (insertError) throw insertError;
+      return res.status(201).json({ ...created, images: imageUrls });
+    } catch (err) {
+      console.error("POST /api/plots error", err);
+      return res.status(500).json({ error: "Failed to create plot" });
     }
-
-    if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
-      return res.status(400).json({ error: "At least one image file is required" });
-    }
-    // Upload all images to Supabase Storage
-    const imageUrls = await Promise.all(
-      imageFiles.map((file) => uploadToSupabaseStorage(file, "plots-images")),
-    );
-    const primaryImageUrl = imageUrls[0];
-
-    // Optional video & audio uploads
-    let videoUrl = null;
-    if (videoFile) {
-      videoUrl = await uploadToSupabaseStorage(videoFile, "plots-videos");
-    }
-
-    let audioUrl = null;
-    if (audioFile) {
-      audioUrl = await uploadToSupabaseStorage(audioFile, "plots-audio");
-    }
-
-    // Persist plot to Supabase (and no longer rely on local SQLite).
-    const { data: created, error: insertError } = await supabase
-      .from("plots")
-      .insert([{
-        title,
-        location,
-        price_zmw: Number(price_zmw),
-        image_url: primaryImageUrl,
-        video_url: videoUrl,
-        audio_url: audioUrl,
-        is_sold: false,
-        // store the full array in case the table has an "images" column
-        images: imageUrls,
-      }])
-      .select()
-      .single();
-    if (insertError) throw insertError;
-    // ensure the response includes the images array for compatibility
-    return res.status(201).json({ ...created, images: imageUrls });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error("POST /api/plots error", err);
-    return res.status(500).json({ error: "Failed to create plot" });
   }
-});
+);
 
 app.get("/api/plots", async (_req, res) => {
   try {
@@ -190,8 +179,6 @@ app.patch("/api/plots/:id/sold", async (req, res) => {
 });
 
 app.patch(
-    console.log("PATCH /api/plots/:id: Using SUPABASE_URL:", process.env.SUPABASE_URL);
-    console.log("PATCH /api/plots/:id: Using SUPABASE_SERVICE_ROLE:", process.env.SUPABASE_SERVICE_ROLE);
   "/api/plots/:id",
   upload.fields([
     { name: "images", maxCount: 10 },
@@ -277,8 +264,6 @@ app.patch(
 );
 
 app.delete("/api/plots/:id", async (req, res) => {
-    console.log("DELETE /api/plots/:id: Using SUPABASE_URL:", process.env.SUPABASE_URL);
-    console.log("DELETE /api/plots/:id: Using SUPABASE_SERVICE_ROLE:", process.env.SUPABASE_SERVICE_ROLE);
   try {
     const id = req.params.id;
 
