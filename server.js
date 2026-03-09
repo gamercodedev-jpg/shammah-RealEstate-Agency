@@ -8,9 +8,11 @@ import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 
 // Notifications: web-push will be imported dynamically when needed.
+// Explicit VAPID keys (fallback to env vars if you prefer to override them externally).
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "BHumbw1t_9AloftLkAvIUPlQj3w4pZkXIVOgqBvtxd8PAoXlKOTOI1u4pm47W07O_22fZXjy791aX9njY1T4DM4";
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || process.env.VAPID_PRIVATE; // allow either name
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@yourdomain.com';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || process.env.VAPID_PRIVATE || "HKsaEu03meZ-z2ueAa7fgHDbAIO62MDJchuNZUmxIIQ";
+const rawSubject = process.env.VAPID_SUBJECT || 'gamercodedev@gmail.com';
+const VAPID_SUBJECT = rawSubject.startsWith('mailto:') ? rawSubject : `mailto:${rawSubject}`;
 
 // Load environment variables (prefer .env.local if present)
 const envPath = path.join(process.cwd(), ".env.local");
