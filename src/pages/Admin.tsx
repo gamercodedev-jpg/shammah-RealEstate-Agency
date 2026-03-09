@@ -8,13 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useNavigate } from "react-router-dom";
-import { fetchApiJson } from "@/lib/api";
+import { fetchApiJson, API_BASE_URL } from "@/lib/api";
 
 const SHAMAH_LOGO_URL = "/shammah-logo.png";
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  "https://shammah-realestate-agency.onrender.com";
+
 
 function uniqueFilePath(file: File) {
   return `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
@@ -40,6 +38,7 @@ export default function Admin() {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [priceZmw, setPriceZmw] = useState(0);
+  const [sizeSqm, setSizeSqm] = useState<number>(0);
   const [plotImageFiles, setPlotImageFiles] = useState<File[]>([]);
   const [plotVideoFile, setPlotVideoFile] = useState<File | null>(null);
   const [plotAudioFile, setPlotAudioFile] = useState<File | null>(null);
@@ -155,7 +154,7 @@ export default function Admin() {
         fetchApiJson<unknown>("/api/news"),
       ]);
 
-      const mappedPlots: Plot[] = (Array.isArray(plotsRaw) ? plotsRaw : []).map((row: any) => {
+        const mappedPlots: Plot[] = (Array.isArray(plotsRaw) ? plotsRaw : []).map((row: any) => {
         const images: string[] = Array.isArray(row.images)
           ? row.images
           : row.image_url
@@ -166,7 +165,7 @@ export default function Admin() {
           title: row.title ?? "",
           description: null,
           location: row.location ?? "",
-          size_sqm: 0,
+            size_sqm: Number(row.size_sqm ?? 0),
           price_zmw: Number(row.price_zmw ?? 0),
           price_usd: 0,
           status: "available",
@@ -186,16 +185,16 @@ export default function Admin() {
         } as Plot;
       });
 
-      const mappedFeeds: Feed[] = (Array.isArray(newsRaw) ? newsRaw : []).map((row: any) => ({
+        const mappedFeeds: Feed[] = (Array.isArray(newsRaw) ? newsRaw : []).map((row: any) => ({
         id: String(row.id ?? ""),
-        title: row.headline ?? "",
+        title: row.title ?? "",
         content: row.content ?? "",
         image_url: row.image_url ?? "",
         video_url: row.video_url ?? null,
         audio_url: row.audio_url ?? null,
         is_published: true,
-        created_at: row.published_at ?? new Date().toISOString(),
-        updated_at: row.published_at ?? new Date().toISOString(),
+        created_at: row.created_at ?? new Date().toISOString(),
+        updated_at: row.created_at ?? new Date().toISOString(),
       }));
 
       setPlots(mappedPlots);
@@ -222,7 +221,7 @@ export default function Admin() {
       }
 
       const formData = new FormData();
-      formData.append("headline", feedTitle);
+      formData.append("title", feedTitle);
       formData.append("content", feedContent);
       formData.append("author", "Admin");
       if (feedImageFile) {
@@ -240,6 +239,7 @@ export default function Admin() {
         ? `${API_BASE_URL}/api/news/${editingFeed.id}`
         : `${API_BASE_URL}/api/news`;
 
+      console.log("Posting feed to:", url);
       const res = await fetch(url, {
         method,
         body: formData,
@@ -294,28 +294,27 @@ export default function Admin() {
         return;
       }
 
+      // Prepare FormData for backend upload
       const formData = new FormData();
       formData.append("title", title);
       formData.append("location", location);
       formData.append("price_zmw", String(priceZmw));
-      for (const file of plotImageFiles) {
-        formData.append("images", file);
-      }
-      if (plotVideoFile) {
-        formData.append("video", plotVideoFile);
-      }
-      if (plotAudioFile) {
-        formData.append("audio", plotAudioFile);
-      }
+      formData.append("size_sqm", String(sizeSqm));
+      plotImageFiles.forEach(file => formData.append("images", file));
+      if (plotVideoFile) formData.append("video", plotVideoFile);
+      if (plotAudioFile) formData.append("audio", plotAudioFile);
 
       const method = editingPlot ? "PATCH" : "POST";
       const url = editingPlot
         ? `${API_BASE_URL}/api/plots/${editingPlot.id}`
         : `${API_BASE_URL}/api/plots`;
 
+      // Send files directly to backend (Supabase-connected)
+      console.log("Posting plot to:", url);
       const res = await fetch(url, {
         method,
         body: formData,
+        // Do NOT set Content-Type header manually; browser handles multipart
       });
 
       if (!res.ok) {
@@ -329,6 +328,7 @@ export default function Admin() {
       setTitle("");
       setLocation("");
       setPriceZmw(0);
+      setSizeSqm(0);
       setPlotImageFiles([]);
       setPlotVideoFile(null);
       setPlotAudioFile(null);
@@ -404,26 +404,56 @@ export default function Admin() {
           <div className="grid lg:grid-cols-2 gap-10">
             <form onSubmit={handlePlotSave} className="space-y-4 p-6 bg-white border rounded-xl shadow-sm">
               <h2 className="text-xl font-bold">{editingPlot ? "Edit Listing" : "Create New Listing"}</h2>
-              <Input placeholder="Plot Title" value={title} onChange={e => setTitle(e.target.value)} required />
-              <Input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} required />
-              <Input type="number" placeholder="Price (ZMW)" value={priceZmw} onChange={e => setPriceZmw(Number(e.target.value))} required />
-              <Input
-                type="file"
-                accept="image/*"
-                multiple
-                onChange={(e) => {
-                  const files = Array.from(e.target.files ?? []);
-                  setPlotImageFiles(files);
-                }}
-              />
-              <Input
-                type="file"
-                accept="video/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  setPlotVideoFile(file);
-                }}
-              />
+
+              <div>
+                <div className="text-sm font-medium">Plot title</div>
+                <Input placeholder="Enter a short, descriptive title" value={title} onChange={e => setTitle(e.target.value)} required />
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">Location</div>
+                <Input placeholder="e.g., Lusaka, Chilenje" value={location} onChange={e => setLocation(e.target.value)} required />
+                <div className="text-xs text-muted-foreground">Provide the nearest town or neighborhood.</div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">Price (ZMW)</div>
+                <Input type="number" placeholder="Numeric value in ZMW" value={priceZmw} onChange={e => setPriceZmw(Number(e.target.value))} required />
+                <div className="text-xs text-muted-foreground">Enter price as a number (no commas).</div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">Size (sqm)</div>
+                <Input type="number" placeholder="Area in square metres" value={sizeSqm} onChange={e => setSizeSqm(Number(e.target.value))} required />
+                <div className="text-xs text-muted-foreground">Enter the plot area in square metres.</div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">Images</div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    setPlotImageFiles(files);
+                  }}
+                />
+                <div className="text-xs text-muted-foreground">Choose up to 10 images. Preferred: JPG/PNG, landscape orientation.</div>
+              </div>
+
+              <div>
+                <div className="text-sm font-medium">Optional video</div>
+                <Input
+                  type="file"
+                  accept="video/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] ?? null;
+                    setPlotVideoFile(file);
+                  }}
+                />
+                <div className="text-xs text-muted-foreground">Optional MP4/H.264 video preview (max 50MB).</div>
+              </div>
               <div className="space-y-2 text-sm">
                 <div>Voice note (optional)</div>
                 <div className="flex gap-2 items-center">
@@ -486,7 +516,7 @@ export default function Admin() {
                         />
                       </TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button size="sm" variant="outline" onClick={() => { setEditingPlot(p); setTitle(p.title); setLocation(p.location || ""); setPriceZmw(p.price_zmw || 0); }}>Edit</Button>
+                        <Button size="sm" variant="outline" onClick={() => { setEditingPlot(p); setTitle(p.title); setLocation(p.location || ""); setPriceZmw(p.price_zmw || 0); setSizeSqm(Number((p as any).size_sqm || 0)); }}>Edit</Button>
                         <Button size="sm" variant="destructive" onClick={() => handleDelete(p.id)}>Delete</Button>
                       </TableCell>
                     </TableRow>

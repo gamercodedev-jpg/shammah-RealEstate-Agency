@@ -5,7 +5,16 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
-import config from "./config.js";
+import dotenv from "dotenv";
+
+// Load environment variables (prefer .env.local if present)
+const envPath = path.join(process.cwd(), ".env.local");
+if (fs.existsSync(envPath)) {
+  dotenv.config({ path: envPath });
+  console.log("Loaded .env.local from:", envPath);
+} else {
+  dotenv.config();
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
@@ -18,11 +27,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = config.port;
+const PORT = process.env.PORT || 4000;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Log Supabase URL on startup for verification (does not log secrets)
+console.log("Loaded SUPABASE_URL:", SUPABASE_URL ? SUPABASE_URL : "(not set)");
 
 // API responses are dynamic (admin can create/delete). Prevent caching so refreshes
 // always reflect the latest server state.
@@ -78,7 +90,7 @@ app.post(
   ]),
   async (req, res) => {
     try {
-      const { title, location, price_zmw } = req.body;
+      const { title, location, price_zmw, size_sqm } = req.body;
       const files = req.files || {};
       const imageFiles = Array.isArray(files) ? files : files.images || [];
       const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
@@ -115,6 +127,7 @@ app.post(
           title,
           location,
           price_zmw: Number(price_zmw),
+          size_sqm: size_sqm ? Number(size_sqm) : null,
           image_url: primaryImageUrl,
           video_url: videoUrl,
           audio_url: audioUrl,
@@ -306,14 +319,14 @@ app.post(
   ]),
   async (req, res) => {
   try {
-    const { headline, content, author } = req.body;
+    const { title, content } = req.body;
     const files = req.files || {};
     const imageFile = !Array.isArray(files) && files.image ? files.image[0] : undefined;
     const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
     const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
 
-    if (!headline || !content || !author) {
-      return res.status(400).json({ error: "headline, content, and author are required" });
+    if (!title || !content) {
+      return res.status(400).json({ error: "title and content are required" });
     }
 
     if (!imageFile) {
@@ -334,13 +347,12 @@ app.post(
     const { data: created, error: insertError } = await supabase
       .from("news")
       .insert([{
-        headline,
+        title,
         content,
-        author,
         image_url: imageUrl,
         video_url: videoUrl,
         audio_url: audioUrl,
-        published_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
       }])
       .select()
       .single();
@@ -357,8 +369,8 @@ app.get("/api/news", async (_req, res) => {
   try {
     const { data, error } = await supabase
       .from("news")
-      .select("*")
-      .order("published_at", { ascending: false });
+      .select("id,title,content,image_url,video_url,audio_url,created_at")
+      .order("created_at", { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
   } catch (err) {
@@ -377,8 +389,8 @@ app.patch(
   ]),
   async (req, res) => {
     try {
-      const id = Number(req.params.id);
-      const { headline, content, author } = req.body;
+      const id = req.params.id;
+      const { title, content } = req.body;
       const files = req.files || {};
       const imageFile = !Array.isArray(files) && files.image ? files.image[0] : undefined;
       const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
@@ -417,9 +429,8 @@ app.patch(
       const { data: updated, error: updateError } = await supabase
         .from("news")
         .update({
-          headline: headline || currentItem.headline,
+          title: title || currentItem.title,
           content: content || currentItem.content,
-          author: author || currentItem.author,
           image_url: imageUrl,
           video_url: videoUrl,
           audio_url: audioUrl,

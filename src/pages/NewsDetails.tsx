@@ -34,14 +34,14 @@ export default function NewsDetails() {
         const raw = await fetchApiJson<unknown>("/api/news");
         const rows = (Array.isArray(raw) ? raw : []).map((row: any) => ({
           id: String(row.id),
-          title: row.headline ?? "",
+          title: row.title ?? "",
           content: row.content ?? "",
           image_url: row.image_url ?? "",
           video_url: row.video_url ?? null,
           audio_url: row.audio_url ?? null,
           is_published: true,
-          created_at: row.published_at ?? null,
-          updated_at: row.published_at ?? null,
+          created_at: row.created_at ?? null,
+          updated_at: row.created_at ?? null,
         })) as Feed[];
 
         const match = rows.find((r) => String(r.id) === String(id));

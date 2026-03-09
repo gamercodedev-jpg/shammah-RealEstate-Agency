@@ -85,7 +85,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Ruler className="h-4 w-4 text-shamah-orange" />
-            <span className="text-sm">{sizeSqm > 0 ? `${sizeSqm.toLocaleString()} sqm` : "Size TBD"}</span>
+            <span className="text-sm">{sizeSqm > 0 ? `${sizeSqm.toLocaleString()} sqm` : "size"}</span>
           </div>
         </div>
 

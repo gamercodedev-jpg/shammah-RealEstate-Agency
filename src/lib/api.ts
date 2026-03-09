@@ -1,8 +1,8 @@
 // Centralized API helper to keep requests consistent and avoid stale caches.
 
+// Use local backend in development (port 4000), otherwise use configured VITE_API_BASE_URL or relative paths
 export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-  "https://shammah-realestate-agency.onrender.com";
+  (import.meta.env.DEV ? "http://localhost:4000" : (import.meta.env.VITE_API_BASE_URL as string | undefined) || "");
 
 function isLikelyNetworkError(err: unknown) {
   // In browsers, failed network requests often throw TypeError("Failed to fetch").
