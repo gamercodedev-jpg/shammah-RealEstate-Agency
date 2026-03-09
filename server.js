@@ -76,6 +76,9 @@ async function deleteFromSupabaseStorage(url, bucket) {
 
 // Allow up to 10 images plus optional video & audio per plot
 app.post(
+    console.log("POST /api/plots: Using SUPABASE_URL:", process.env.SUPABASE_URL);
+    console.log("POST /api/plots: Using SUPABASE_SERVICE_ROLE:", process.env.SUPABASE_SERVICE_ROLE);
+    console.log("Uploading images to Supabase bucket: plots-images");
   "/api/plots",
   upload.fields([
     { name: "images", maxCount: 10 },
@@ -187,6 +190,8 @@ app.patch("/api/plots/:id/sold", async (req, res) => {
 });
 
 app.patch(
+    console.log("PATCH /api/plots/:id: Using SUPABASE_URL:", process.env.SUPABASE_URL);
+    console.log("PATCH /api/plots/:id: Using SUPABASE_SERVICE_ROLE:", process.env.SUPABASE_SERVICE_ROLE);
   "/api/plots/:id",
   upload.fields([
     { name: "images", maxCount: 10 },
@@ -272,6 +277,8 @@ app.patch(
 );
 
 app.delete("/api/plots/:id", async (req, res) => {
+    console.log("DELETE /api/plots/:id: Using SUPABASE_URL:", process.env.SUPABASE_URL);
+    console.log("DELETE /api/plots/:id: Using SUPABASE_SERVICE_ROLE:", process.env.SUPABASE_SERVICE_ROLE);
   try {
     const id = req.params.id;
 
