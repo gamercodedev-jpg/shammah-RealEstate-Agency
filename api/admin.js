@@ -1,41 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
-import { v2 as cloudinary } from "cloudinary";
 import config from "../config.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE || process.env.VITE_SUPABASE_SERVICE_ROLE;
 
 const ALLOWED_TABLES = ["plots", "feeds", "news", "inquiries"];
-
-cloudinary.config({
-  cloud_name: config.cloudinary.cloudName,
-  api_key: config.cloudinary.apiKey,
-  api_secret: config.cloudinary.apiSecret,
-});
-
-// Helper function to extract public_id from Cloudinary URL
-function getPublicIdFromUrl(url) {
-  if (!url || typeof url !== "string") return null;
-  // Match the part after /upload/ and before the extension
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
-  return match ? match[1] : null;
-}
-
-// Helper function to delete media from Cloudinary
-async function deleteFromCloudinary(url) {
-  const publicId = getPublicIdFromUrl(url);
-  if (publicId) {
-    try {
-      const result = await cloudinary.uploader.destroy(publicId);
-      console.log(`Deleted from Cloudinary: ${publicId}`, result);
-      return true;
-    } catch (err) {
-      console.error(`Failed to delete ${publicId} from Cloudinary:`, err);
-      return false;
-    }
-  }
-  return true; // No public_id, consider success
-}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -102,13 +71,13 @@ export default async function handler(req, res) {
       const { data: updatedRow, error } = await supabaseAdmin.from(table).update(row).eq("id", id).select().single();
       if (error) return res.status(400).json({ error: error.message });
       
-      // Delete old media from Cloudinary if URLs changed
+      // Delete old media from Supabase Storage if URLs changed
       const oldUrls = [currentRow.image_url, currentRow.video_url, currentRow.audio_url];
       const newUrls = [updatedRow.image_url, updatedRow.video_url, updatedRow.audio_url];
-      
+      const buckets = ["plots-images", "plots-videos", "plots-audio"];
       for (let i = 0; i < oldUrls.length; i++) {
         if (oldUrls[i] && oldUrls[i] !== newUrls[i]) {
-          await deleteFromCloudinary(oldUrls[i]); // Don't fail the update if this fails
+          await deleteFromSupabaseStorage(oldUrls[i], buckets[i]);
         }
       }
       
@@ -122,14 +91,13 @@ export default async function handler(req, res) {
       const { data: row, error: fetchError } = await supabaseAdmin.from(table).select('*').eq("id", id).single();
       if (fetchError) return res.status(400).json({ error: fetchError.message });
       
-      // Delete media from Cloudinary
-      const mediaUrls = [row.image_url, row.video_url, row.audio_url].filter(Boolean);
-      const deletePromises = mediaUrls.map(deleteFromCloudinary);
-      const deleteResults = await Promise.all(deletePromises);
-      
-      // If any Cloudinary deletion failed, don't delete from Supabase
-      if (deleteResults.includes(false)) {
-        return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
+      // Delete media from Supabase Storage
+      const buckets = ["plots-images", "plots-videos", "plots-audio"];
+      const mediaUrls = [row.image_url, row.video_url, row.audio_url];
+      for (let i = 0; i < mediaUrls.length; i++) {
+        if (mediaUrls[i]) {
+          await deleteFromSupabaseStorage(mediaUrls[i], buckets[i]);
+        }
       }
       
       // Now delete from Supabase
@@ -142,4 +110,14 @@ export default async function handler(req, res) {
   } catch (e) {
     return res.status(500).json({ error: String(e) });
   }
+}
+
+// Helper: delete a file from Supabase Storage
+async function deleteFromSupabaseStorage(url, bucket) {
+  if (!url) return true;
+  const parts = url.split(`/${bucket}/`);
+  if (parts.length < 2) return false;
+  const filePath = parts[1];
+  const { error } = await supabaseAdmin.storage.from(bucket).remove([filePath]);
+  return !error;
 }
