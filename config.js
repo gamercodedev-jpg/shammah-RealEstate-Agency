@@ -33,10 +33,16 @@ const config = {
     apiKey: process.env.CLOUDINARY_API_KEY || process.env.VITE_CLOUDINARY_API_KEY || "",
     apiSecret: process.env.CLOUDINARY_API_SECRET || process.env.VITE_CLOUDINARY_API_SECRET || ""
   },
+
   
   // API configuration
   api: {
     baseUrl: process.env.VITE_API_BASE_URL || "http://localhost:4000"
+  },
+  // Supabase configuration (for persistent storage)
+  supabase: {
+    url: process.env.SUPABASE_URL || "",
+    serviceRole: process.env.SUPABASE_SERVICE_ROLE || "",
   }
 };
 

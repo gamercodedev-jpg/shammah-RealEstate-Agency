@@ -45,6 +45,8 @@ The admin UI may need a server-side helper to perform writes that are blocked by
 	- `SUPABASE_SERVICE_ROLE` — your Supabase service_role key (keep secret)
 	- `VITE_ADMIN_INSERT_ENDPOINT` — set to the deployed endpoint (e.g. `https://your-site.com/api/admin`)
 
+**Note:** the core API (`server.js`) now writes all news and plot posts to Supabase rather than a local SQLite file. To keep your content permanent you **must** set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE` in production (and apply the provided migrations). Without them the app will fall back to an ephemeral SQLite database and posts will disappear on deploy/restart. See `.env.example` for the new variables.
+
 - Or run locally with `vercel dev` (install Vercel CLI) after setting `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE` in your env. Then set `VITE_ADMIN_INSERT_ENDPOINT=http://localhost:3000/api/admin` in your local `.env` and restart the frontend.
 
 - Quick (unsafe, dev-only): set `VITE_SUPABASE_SERVICE_ROLE` in your local `.env` so the browser client uses the service role directly. DO NOT use this in production — it exposes full DB access to users.

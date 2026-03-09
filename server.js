@@ -5,9 +5,20 @@ import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { v2 as cloudinary } from "cloudinary";
+import { createClient } from "@supabase/supabase-js";
 
-import db from "./db.js";
+// sqlite helper (only used in legacy scripts; production uses Supabase)
 import config from "./config.js";
+
+// Supabase client used for all persistent storage (replaces the ephemeral
+// SQLite file in production). Environment variables must be set on deploy.
+const supabase = createClient(
+  "https://beagmgmrsmfovardrshc.supabase.co",
+  "eyJhbGciOiJI…<your service role key>"
+);
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE) {
+  console.warn("⚠️  SUPABASE_URL or SUPABASE_SERVICE_ROLE not set; persistence will fail");
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -111,31 +122,25 @@ app.post(
       audioUrl = audioResult.secure_url;
     }
 
-    // Insert the main plot record with a primary image URL
-    const info = await db.run(
-      "INSERT INTO plots (title, location, price_zmw, image_url, video_url, audio_url, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
-      [
+    // Persist plot to Supabase (and no longer rely on local SQLite).
+    const { data: created, error: insertError } = await supabase
+      .from("plots")
+      .insert([{
         title,
         location,
-        Number(price_zmw),
-        primaryImageUrl,
-        videoUrl,
-        audioUrl,
-      ],
-    );
-
-    // Insert all image URLs into plot_images linked to this plot
-    const plotId = Number(info.lastID);
-    for (const url of imageUrls) {
-      // eslint-disable-next-line no-await-in-loop
-      await db.run("INSERT INTO plot_images (plot_id, image_url) VALUES (?, ?)", [
-        plotId,
-        url,
-      ]);
-    }
-
-    const inserted = await db.get("SELECT * FROM plots WHERE id = ?", [plotId]);
-    return res.status(201).json({ ...inserted, images: imageUrls });
+        price_zmw: Number(price_zmw),
+        image_url: primaryImageUrl,
+        video_url: videoUrl,
+        audio_url: audioUrl,
+        is_sold: false,
+        // store the full array in case the table has an "images" column
+        images: imageUrls,
+      }])
+      .select()
+      .single();
+    if (insertError) throw insertError;
+    // ensure the response includes the images array for compatibility
+    return res.status(201).json({ ...created, images: imageUrls });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("POST /api/plots error", err);
@@ -145,23 +150,14 @@ app.post(
 
 app.get("/api/plots", async (_req, res) => {
   try {
-    const plots = await db.all(
-      "SELECT * FROM plots ORDER BY datetime(created_at) DESC",
-    );
-
-    const images = await db.all(
-      "SELECT plot_id, image_url FROM plot_images ORDER BY id ASC",
-    );
-
-    const imagesByPlot = new Map();
-    for (const row of images) {
-      const key = row.plot_id;
-      if (!imagesByPlot.has(key)) imagesByPlot.set(key, []);
-      imagesByPlot.get(key).push(row.image_url);
-    }
+    const { data: plots, error } = await supabase
+      .from("plots")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
 
     const result = plots.map((plot) => {
-      const imgs = imagesByPlot.get(plot.id) || (plot.image_url ? [plot.image_url] : []);
+      const imgs = plot.images || (plot.image_url ? [plot.image_url] : []);
       return { ...plot, images: imgs };
     });
 
@@ -175,28 +171,26 @@ app.get("/api/plots", async (_req, res) => {
 
 app.patch("/api/plots/:id/sold", async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
     const { is_sold } = req.body ?? {};
 
     if (typeof is_sold !== "boolean") {
       return res.status(400).json({ error: "is_sold (boolean) is required" });
     }
 
-    const info = await db.run("UPDATE plots SET is_sold = ? WHERE id = ?", [
-      is_sold ? 1 : 0,
-      id,
-    ]);
+    const { data: updated, error } = await supabase
+      .from("plots")
+      .update({ is_sold })
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
 
-    if (info.changes === 0) {
-      return res.status(404).json({ error: "Plot not found" });
-    }
-
-    const updated = await db.get("SELECT * FROM plots WHERE id = ?", [id]);
     return res.json(updated);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("PATCH /api/plots/:id/sold error", err);
-    return res.status(500).json({ error: "Failed to update sold status" });
+    return res.status(500).json({ error: "Failed to mark plot sold" });
   }
 });
 
@@ -216,8 +210,13 @@ app.patch(
       const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
       const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
 
-      // Get the current plot
-      const currentPlot = await db.get("SELECT * FROM plots WHERE id = ?", [id]);
+      // Get the current plot from Supabase
+      const { data: currentPlot, error: fetchError } = await supabase
+        .from("plots")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (fetchError) throw fetchError;
       if (!currentPlot) {
         return res.status(404).json({ error: "Plot not found" });
       }
@@ -228,24 +227,20 @@ app.patch(
       const newPriceZmw = price_zmw ? Number(price_zmw) : currentPlot.price_zmw;
 
       let primaryImageUrl = currentPlot.image_url;
-      const existingImages = await db.all(
-        "SELECT image_url FROM plot_images WHERE plot_id = ?",
-        [id],
-      );
+      const existingImages = currentPlot.images || [];
 
       // Handle new images if provided
+      let updatedImages = existingImages;
       if (imageFiles && imageFiles.length > 0) {
         // Delete old images from Cloudinary
-        const oldUrls = [currentPlot.image_url, ...existingImages.map((r) => r.image_url)];
+        const oldUrls = [currentPlot.image_url, ...existingImages].filter(Boolean);
         for (const url of oldUrls) {
-          if (url) {
-            const publicId = getPublicIdFromUrl(url);
-            if (publicId) {
-              try {
-                await cloudinary.uploader.destroy(publicId);
-              } catch (err) {
-                console.error(`Failed to delete old image ${publicId}:`, err);
-              }
+          const publicId = getPublicIdFromUrl(url);
+          if (publicId) {
+            try {
+              await cloudinary.uploader.destroy(publicId);
+            } catch (err) {
+              console.error(`Failed to delete old image ${publicId}:`, err);
             }
           }
         }
@@ -255,20 +250,8 @@ app.patch(
           imageFiles.map((file) => uploadToCloudinary(file, "shammah/plots")),
         );
 
-        const imageUrls = uploadResults.map((r) => r.secure_url);
-        primaryImageUrl = imageUrls[0];
-
-        // Clear old plot_images entries
-        await db.run("DELETE FROM plot_images WHERE plot_id = ?", [id]);
-
-        // Insert new image URLs into plot_images
-        for (const url of imageUrls) {
-          // eslint-disable-next-line no-await-in-loop
-          await db.run("INSERT INTO plot_images (plot_id, image_url) VALUES (?, ?)", [
-            id,
-            url,
-          ]);
-        }
+        updatedImages = uploadResults.map((r) => r.secure_url);
+        primaryImageUrl = updatedImages[0];
       }
 
       // Handle new video if provided
@@ -315,18 +298,24 @@ app.patch(
         }
       }
 
-      // Update plot record
-      await db.run(
-        "UPDATE plots SET title = ?, location = ?, price_zmw = ?, image_url = ?, video_url = ?, audio_url = ? WHERE id = ?",
-        [newTitle, newLocation, newPriceZmw, primaryImageUrl, videoUrl, audioUrl, id],
-      );
+      // Update plot record in Supabase
+      const { data: updated, error: updateError } = await supabase
+        .from("plots")
+        .update({
+          title: newTitle,
+          location: newLocation,
+          price_zmw: newPriceZmw,
+          image_url: primaryImageUrl,
+          video_url: videoUrl,
+          audio_url: audioUrl,
+          images: updatedImages,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      if (updateError) throw updateError;
 
-      const updated = await db.get("SELECT * FROM plots WHERE id = ?", [id]);
-      const images = await db.all(
-        "SELECT plot_id, image_url FROM plot_images WHERE plot_id = ?",
-        [id],
-      );
-      const imageUrls = images.map((r) => r.image_url);
+      const imageUrls = updated.images || (primaryImageUrl ? [primaryImageUrl] : []);
 
       return res.json({ ...updated, images: imageUrls.length > 0 ? imageUrls : [primaryImageUrl] });
     } catch (err) {
@@ -339,20 +328,23 @@ app.patch(
 
 app.delete("/api/plots/:id", async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    
-    // Get all images for this plot
-    const plotImages = await db.all("SELECT image_url FROM plot_images WHERE plot_id = ?", [id]);
-    const plot = await db.get("SELECT image_url, video_url, audio_url FROM plots WHERE id = ?", [id]);
-    
+    const id = req.params.id;
+
+    // Fetch plot from Supabase so we know what media to clean up
+    const { data: plot, error: fetchError } = await supabase
+      .from("plots")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (fetchError) throw fetchError;
+    if (!plot) return res.status(404).json({ error: "Plot not found" });
+
     const allUrls = [];
-    if (plot) {
-      if (plot.image_url) allUrls.push(plot.image_url);
-      if (plot.video_url) allUrls.push(plot.video_url);
-      if (plot.audio_url) allUrls.push(plot.audio_url);
-    }
-    plotImages.forEach(img => allUrls.push(img.image_url));
-    
+    if (plot.image_url) allUrls.push(plot.image_url);
+    if (plot.video_url) allUrls.push(plot.video_url);
+    if (plot.audio_url) allUrls.push(plot.audio_url);
+    if (plot.images && Array.isArray(plot.images)) allUrls.push(...plot.images);
+
     // Delete from Cloudinary
     const deletePromises = allUrls.map(async (url) => {
       const publicId = getPublicIdFromUrl(url);
@@ -367,18 +359,19 @@ app.delete("/api/plots/:id", async (req, res) => {
       }
       return true;
     });
-    
+
     const results = await Promise.all(deletePromises);
     if (results.includes(false)) {
       return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
     }
-    
-    // Delete from DB
-    await db.run("DELETE FROM plot_images WHERE plot_id = ?", [id]);
-    const info = await db.run("DELETE FROM plots WHERE id = ?", [id]);
-    if (info.changes === 0) {
-      return res.status(404).json({ error: "Plot not found" });
-    }
+
+    // Remove from Supabase
+    const { error: deleteError } = await supabase
+      .from("plots")
+      .delete()
+      .eq("id", id);
+    if (deleteError) throw deleteError;
+
     return res.status(204).end();
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -434,13 +427,21 @@ app.post(
       audioUrl = audioResult.secure_url;
     }
 
-    const info = await db.run(
-      "INSERT INTO news (headline, content, author, image_url, video_url, audio_url, published_at) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))",
-      [headline, content, author, imageUrl, videoUrl, audioUrl],
-    );
-
-    const inserted = await db.get("SELECT * FROM news WHERE id = ?", [info.lastID]);
-    return res.status(201).json(inserted);
+    const { data: created, error: insertError } = await supabase
+      .from("news")
+      .insert([{
+        headline,
+        content,
+        author,
+        image_url: imageUrl,
+        video_url: videoUrl,
+        audio_url: audioUrl,
+        published_at: new Date().toISOString(),
+      }])
+      .select()
+      .single();
+    if (insertError) throw insertError;
+    return res.status(201).json(created);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("POST /api/news error", err);
@@ -450,10 +451,12 @@ app.post(
 
 app.get("/api/news", async (_req, res) => {
   try {
-    const rows = await db.all(
-      "SELECT * FROM news ORDER BY datetime(published_at) DESC",
-    );
-    return res.json(rows);
+    const { data, error } = await supabase
+      .from("news")
+      .select("*")
+      .order("published_at", { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("GET /api/news error", err);
@@ -477,8 +480,13 @@ app.patch(
       const videoFile = !Array.isArray(files) && files.video ? files.video[0] : undefined;
       const audioFile = !Array.isArray(files) && files.audio ? files.audio[0] : undefined;
 
-      // Get the current news item
-      const currentItem = await db.get("SELECT * FROM news WHERE id = ?", [id]);
+      // Get the current news item from Supabase
+      const { data: currentItem, error: fetchError } = await supabase
+        .from("news")
+        .select("*")
+        .eq("id", id)
+        .single();
+      if (fetchError) throw fetchError;
       if (!currentItem) {
         return res.status(404).json({ error: "News item not found" });
       }
@@ -537,21 +545,22 @@ app.patch(
         }
       }
 
-      // Update in DB
-      await db.run(
-        "UPDATE news SET headline = ?, content = ?, author = ?, image_url = ?, video_url = ?, audio_url = ? WHERE id = ?",
-        [
-          headline || currentItem.headline,
-          content || currentItem.content,
-          author || currentItem.author,
-          imageUrl,
-          videoUrl,
-          audioUrl,
-          id,
-        ],
-      );
+      // Update in Supabase
+      const { data: updated, error: updateError } = await supabase
+        .from("news")
+        .update({
+          headline: headline || currentItem.headline,
+          content: content || currentItem.content,
+          author: author || currentItem.author,
+          image_url: imageUrl,
+          video_url: videoUrl,
+          audio_url: audioUrl,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      if (updateError) throw updateError;
 
-      const updated = await db.get("SELECT * FROM news WHERE id = ?", [id]);
       return res.json(updated);
     } catch (err) {
       // eslint-disable-next-line no-console
@@ -563,10 +572,15 @@ app.patch(
 
 app.delete("/api/news/:id", async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    const id = req.params.id;
     
-    // Get the news item
-    const newsItem = await db.get("SELECT image_url, video_url, audio_url FROM news WHERE id = ?", [id]);
+    // Get the news item from Supabase
+    const { data: newsItem, error: fetchError } = await supabase
+      .from("news")
+      .select("image_url, video_url, audio_url")
+      .eq("id", id)
+      .single();
+    if (fetchError) throw fetchError;
     if (!newsItem) {
       return res.status(404).json({ error: "News item not found" });
     }
@@ -593,11 +607,13 @@ app.delete("/api/news/:id", async (req, res) => {
       return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
     }
     
-    // Delete from DB
-    const info = await db.run("DELETE FROM news WHERE id = ?", [id]);
-    if (info.changes === 0) {
-      return res.status(404).json({ error: "News item not found" });
-    }
+    // Delete from Supabase
+    const { error: deleteError } = await supabase
+      .from("news")
+      .delete()
+      .eq("id", id);
+    if (deleteError) throw deleteError;
+
     return res.status(204).end();
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -625,3 +641,5 @@ app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`Shammah API server running on http://localhost:${PORT}`);
 });
+
+

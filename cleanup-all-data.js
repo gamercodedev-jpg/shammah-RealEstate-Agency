@@ -10,6 +10,12 @@
  */
 
 import db from "./db.js";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE,
+);
 
 async function cleanupAll() {
   console.log("\n🗑️  DESTRUCTIVE CLEANUP - REMOVING ALL DATA\n");
@@ -30,6 +36,16 @@ async function cleanupAll() {
     console.log("3️⃣  Deleting all news...");
     const newsResult = await db.run("DELETE FROM news");
     console.log(`   ✓ Deleted ${newsResult.changes} news records\n`);
+
+    // also clear Supabase tables if configured
+    console.log("🗄️  Cleaning up Supabase tables (plots/news)");
+    for (const t of ["plot_images", "plots", "news"]) {
+      const { error } = await supabase.from(t).delete();
+      if (error && !error.message.includes("relation \"")) {
+        // ignore "relation does not exist" errors
+        console.warn(`   ⚠️  Supabase cleanup ${t} error:`, error.message);
+      }
+    }
 
     // Verify deletion
     console.log("4️⃣  Verifying cleanup...");
