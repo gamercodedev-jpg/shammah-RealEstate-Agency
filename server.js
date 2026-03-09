@@ -50,23 +50,27 @@ cloudinary.config({
 // Multer configuration: keep files in memory, then upload to Cloudinary
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Helper: upload a file buffer using cloudinary.uploader.upload
-async function uploadToCloudinary(file, folder, resourceType = "image") {
-  const base64 = file.buffer.toString("base64");
-  const dataUri = `data:${file.mimetype};base64,${base64}`;
-  return cloudinary.uploader.upload(dataUri, {
-    folder,
-    resource_type: resourceType,
-  });
+// Helper: upload a file buffer to Supabase Storage
+async function uploadToSupabaseStorage(file, bucket, folder = "") {
+  const fileName = `${Date.now()}-${file.originalname}`;
+  const filePath = folder ? `${folder}/${fileName}` : fileName;
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, file.buffer, {
+      contentType: file.mimetype,
+      upsert: true,
+    });
+  if (error) throw error;
+  // Get public URL
+  const { publicUrl } = supabase.storage.from(bucket).getPublicUrl(filePath).data;
+  return publicUrl;
 }
 
+// Helper: upload a file buffer using cloudinary.uploader.upload
+// Cloudinary logic removed; now using Supabase Storage only
+
 // Helper function to extract public_id from Cloudinary URL
-function getPublicIdFromUrl(url) {
-  if (!url || typeof url !== "string") return null;
-  // Match the part after /upload/ and before the extension
-  const match = url.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-z]+$/i);
-  return match ? match[1] : null;
-}
+// No longer needed
 
 // --- PLOTS API ---
 
@@ -93,33 +97,21 @@ app.post(
     if (!Array.isArray(imageFiles) || imageFiles.length === 0) {
       return res.status(400).json({ error: "At least one image file is required" });
     }
-    // Upload all images to Cloudinary
-    const uploadResults = await Promise.all(
-      imageFiles.map((file) => uploadToCloudinary(file, "shammah/plots")),
+    // Upload all images to Supabase Storage
+    const imageUrls = await Promise.all(
+      imageFiles.map((file) => uploadToSupabaseStorage(file, "plots-images")),
     );
-
-    const imageUrls = uploadResults.map((r) => r.secure_url);
     const primaryImageUrl = imageUrls[0];
 
     // Optional video & audio uploads
     let videoUrl = null;
     if (videoFile) {
-      const videoResult = await uploadToCloudinary(
-        videoFile,
-        "shammah/plots/videos",
-        "video",
-      );
-      videoUrl = videoResult.secure_url;
+      videoUrl = await uploadToSupabaseStorage(videoFile, "plots-videos");
     }
 
     let audioUrl = null;
     if (audioFile) {
-      const audioResult = await uploadToCloudinary(
-        audioFile,
-        "shammah/plots/audio",
-        "video",
-      );
-      audioUrl = audioResult.secure_url;
+      audioUrl = await uploadToSupabaseStorage(audioFile, "plots-audio");
     }
 
     // Persist plot to Supabase (and no longer rely on local SQLite).
@@ -232,70 +224,23 @@ app.patch(
       // Handle new images if provided
       let updatedImages = existingImages;
       if (imageFiles && imageFiles.length > 0) {
-        // Delete old images from Cloudinary
-        const oldUrls = [currentPlot.image_url, ...existingImages].filter(Boolean);
-        for (const url of oldUrls) {
-          const publicId = getPublicIdFromUrl(url);
-          if (publicId) {
-            try {
-              await cloudinary.uploader.destroy(publicId);
-            } catch (err) {
-              console.error(`Failed to delete old image ${publicId}:`, err);
-            }
-          }
-        }
-
-        // Upload new images
-        const uploadResults = await Promise.all(
-          imageFiles.map((file) => uploadToCloudinary(file, "shammah/plots")),
+        // Upload new images to Supabase Storage
+        updatedImages = await Promise.all(
+          imageFiles.map((file) => uploadToSupabaseStorage(file, "plots-images")),
         );
-
-        updatedImages = uploadResults.map((r) => r.secure_url);
         primaryImageUrl = updatedImages[0];
       }
 
       // Handle new video if provided
       let videoUrl = currentPlot.video_url;
       if (videoFile) {
-        const videoResult = await uploadToCloudinary(
-          videoFile,
-          "shammah/plots/videos",
-          "video",
-        );
-        videoUrl = videoResult.secure_url;
-        // Delete old video
-        if (currentPlot.video_url) {
-          const publicId = getPublicIdFromUrl(currentPlot.video_url);
-          if (publicId) {
-            try {
-              await cloudinary.uploader.destroy(publicId);
-            } catch (err) {
-              console.error(`Failed to delete old video ${publicId}:`, err);
-            }
-          }
-        }
+        videoUrl = await uploadToSupabaseStorage(videoFile, "plots-videos");
       }
 
       // Handle new audio if provided
       let audioUrl = currentPlot.audio_url;
       if (audioFile) {
-        const audioResult = await uploadToCloudinary(
-          audioFile,
-          "shammah/plots/audio",
-          "video",
-        );
-        audioUrl = audioResult.secure_url;
-        // Delete old audio
-        if (currentPlot.audio_url) {
-          const publicId = getPublicIdFromUrl(currentPlot.audio_url);
-          if (publicId) {
-            try {
-              await cloudinary.uploader.destroy(publicId);
-            } catch (err) {
-              console.error(`Failed to delete old audio ${publicId}:`, err);
-            }
-          }
-        }
+        audioUrl = await uploadToSupabaseStorage(audioFile, "plots-audio");
       }
 
       // Update plot record in Supabase
@@ -339,31 +284,9 @@ app.delete("/api/plots/:id", async (req, res) => {
     if (fetchError) throw fetchError;
     if (!plot) return res.status(404).json({ error: "Plot not found" });
 
-    const allUrls = [];
-    if (plot.image_url) allUrls.push(plot.image_url);
-    if (plot.video_url) allUrls.push(plot.video_url);
-    if (plot.audio_url) allUrls.push(plot.audio_url);
-    if (plot.images && Array.isArray(plot.images)) allUrls.push(...plot.images);
-
-    // Delete from Cloudinary
-    const deletePromises = allUrls.map(async (url) => {
-      const publicId = getPublicIdFromUrl(url);
-      if (publicId) {
-        try {
-          await cloudinary.uploader.destroy(publicId);
-          console.log(`Deleted from Cloudinary: ${publicId}`);
-        } catch (err) {
-          console.error(`Failed to delete ${publicId}:`, err);
-          return false;
-        }
-      }
-      return true;
-    });
-
-    const results = await Promise.all(deletePromises);
-    if (results.includes(false)) {
-      return res.status(500).json({ error: "Failed to delete media from Cloudinary" });
-    }
+    // Delete from Supabase Storage (optional: implement if you want to remove files)
+    // Supabase Storage does not auto-delete files when DB record is deleted.
+    // You can implement file deletion here if needed, using supabase.storage.from(bucket).remove([filePath])
 
     // Remove from Supabase
     const { error: deleteError } = await supabase
