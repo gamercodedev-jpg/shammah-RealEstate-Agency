@@ -399,6 +399,28 @@ app.delete("/api/plots/:id", async (req, res) => {
 
 // --- NEWS API ---
 
+function isMissingBucketError(err) {
+  const msg = String(err?.message || "").toLowerCase();
+  return msg.includes("bucket") && (msg.includes("not found") || msg.includes("does not exist"));
+}
+
+async function uploadNewsFileWithMitigation(file, bucket) {
+  try {
+    return await uploadToSupabaseStorage(file, bucket);
+  } catch (err) {
+    if (!isMissingBucketError(err)) throw err;
+
+    const { error: createError } = await supabase.storage.createBucket(bucket, { public: true });
+    if (createError) {
+      const createMsg = String(createError?.message || "").toLowerCase();
+      if (!createMsg.includes("already exists")) throw createError;
+    }
+
+    // Retry once after ensuring bucket exists.
+    return uploadToSupabaseStorage(file, bucket);
+  }
+}
+
 app.post(
   "/api/news",
   upload.fields([
@@ -421,16 +443,16 @@ app.post(
     if (!imageFile) {
       return res.status(400).json({ error: "Image file is required" });
     }
-    const imageUrl = await uploadToSupabaseStorage(imageFile, "news-images");
+    const imageUrl = await uploadNewsFileWithMitigation(imageFile, "news-images");
 
     let videoUrl = null;
     if (videoFile) {
-      videoUrl = await uploadToSupabaseStorage(videoFile, "news-videos");
+      videoUrl = await uploadNewsFileWithMitigation(videoFile, "news-videos");
     }
 
     let audioUrl = null;
     if (audioFile) {
-      audioUrl = await uploadToSupabaseStorage(audioFile, "news-audio");
+      audioUrl = await uploadNewsFileWithMitigation(audioFile, "news-audio");
     }
 
     const { data: created, error: insertError } = await supabase
@@ -450,7 +472,7 @@ app.post(
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("POST /api/news error", err);
-    return res.status(500).json({ error: "Failed to create news item" });
+    return res.status(500).json({ error: err?.message || "Failed to create news item" });
   }
 });
 
@@ -499,19 +521,19 @@ app.patch(
       // Upload new image if provided
       let imageUrl = currentItem.image_url;
       if (imageFile) {
-        imageUrl = await uploadToSupabaseStorage(imageFile, "news-images");
+        imageUrl = await uploadNewsFileWithMitigation(imageFile, "news-images");
       }
 
       // Upload new video if provided
       let videoUrl = currentItem.video_url;
       if (videoFile) {
-        videoUrl = await uploadToSupabaseStorage(videoFile, "news-videos");
+        videoUrl = await uploadNewsFileWithMitigation(videoFile, "news-videos");
       }
 
       // Upload new audio if provided
       let audioUrl = currentItem.audio_url;
       if (audioFile) {
-        audioUrl = await uploadToSupabaseStorage(audioFile, "news-audio");
+        audioUrl = await uploadNewsFileWithMitigation(audioFile, "news-audio");
       }
 
       // Update in Supabase
@@ -533,7 +555,7 @@ app.patch(
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error("PATCH /api/news/:id error", err);
-      return res.status(500).json({ error: "Failed to update news item" });
+      return res.status(500).json({ error: err?.message || "Failed to update news item" });
     }
   },
 );
