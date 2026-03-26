@@ -367,3 +367,50 @@
   h2 { font-size: 1.75rem; }
   h3 { font-size: 1.25rem; }
 }
+
+/* TV-specific sidebar visual tweaks */
+@media (min-width: 1536px) {
+  /* Make menu buttons larger and more touch-friendly */
+  [data-sidebar="menu-button"] {
+    padding: 1rem 1.25rem;
+    gap: 1rem;
+    font-size: 1.05rem;
+  }
+
+  [data-sidebar="menu-button"] svg,
+  [data-sidebar="menu-item"] svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* When collapsed, center the icons and increase hit area */
+  .group\/sidebar-wrapper [data-state="collapsed"] [data-sidebar="menu-button"] {
+    justify-content: center;
+    padding: 0.9rem;
+  }
+
+  /* Increase trigger size */
+  [data-sidebar="trigger"] {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  /* Sidebar header/logo spacing */
+  [data-sidebar="header"] {
+    padding: 1.25rem;
+  }
+
+  /* Improve tooltip/readability on TV */
+  .radix-tooltip-content,
+  [data-sidebar="menu-button"] + .radix-tooltip-content {
+    font-size: 1rem;
+    padding: 0.6rem 0.8rem;
+  }
+
+  /* Increase list spacing */
+  [data-sidebar="group"] {
+    padding: 1rem 0.75rem;
+  }
+}
