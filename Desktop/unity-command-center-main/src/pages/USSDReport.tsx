@@ -200,7 +200,7 @@ const USSDReport = () => {
                     onClick={() => handleOption(p)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full text-left text-base md:text-lg px-4 py-4 rounded-md bg-card/80 text-foreground hover:bg-primary/5 transition-all duration-200 border border-border/50 shadow-sm"
+                    className="w-full text-left text-base md:text-lg px-4 py-4 rounded-md bg-primary/10 text-foreground hover:bg-primary/20 transition-all duration-200 border border-primary/30 shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
@@ -228,7 +228,7 @@ const USSDReport = () => {
                     onClick={() => handleOption(d)}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    className="w-full text-left text-base md:text-lg px-4 py-4 rounded-md bg-card/80 text-foreground hover:bg-primary/5 transition-all duration-200 border border-border/50 shadow-sm"
+                    className="w-full text-left text-base md:text-lg px-4 py-4 rounded-md bg-primary/10 text-foreground hover:bg-primary/20 transition-all duration-200 border border-primary/30 shadow-sm"
                   >
                     <div className="flex items-center gap-3">
                       <MapPin className="h-5 w-5 text-primary flex-shrink-0" />

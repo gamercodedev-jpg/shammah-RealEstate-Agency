@@ -137,6 +137,16 @@
     border-radius: 0.5rem;
   }
 
+  /* Improve default primary button visuals used by `Button` component */
+  .btn-primary, button[data-variant="default"], .button-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border: 1px solid hsl(var(--primary) / 0.9);
+  }
+  .btn-primary:hover, button[data-variant="default"]:hover, .button-primary:hover {
+    background-color: color-mix(in srgb, hsl(var(--primary)) 85%, black 15%);
+  }
+
   /* Slightly larger body font and comfortable line-height */
   body {
     font-size: 16px;
