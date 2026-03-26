@@ -1,0 +1,369 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 160 20% 97%;
+    --foreground: 200 25% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 200 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 200 25% 10%;
+
+    --primary: 174 62% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 170 30% 92%;
+    --secondary-foreground: 200 25% 10%;
+
+    --muted: 170 20% 94%;
+    --muted-foreground: 200 10% 45%;
+
+    --accent: 43 96% 56%;
+    --accent-foreground: 200 25% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 170 15% 88%;
+    --input: 170 15% 88%;
+    --ring: 174 62% 38%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 174 30% 15%;
+    --sidebar-foreground: 170 15% 90%;
+    --sidebar-primary: 174 62% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 174 30% 22%;
+    --sidebar-accent-foreground: 170 15% 90%;
+    --sidebar-border: 174 20% 25%;
+    --sidebar-ring: 174 62% 50%;
+
+    --safe-green: 160 60% 45%;
+    --safe-green-foreground: 0 0% 100%;
+    --warning: 43 96% 56%;
+    --warning-foreground: 200 25% 10%;
+    --info: 200 80% 50%;
+    --info-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 200 25% 8%;
+    --foreground: 170 15% 92%;
+
+    --card: 200 20% 12%;
+    --card-foreground: 170 15% 92%;
+
+    --popover: 200 20% 12%;
+    --popover-foreground: 170 15% 92%;
+
+    --primary: 174 62% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 20% 18%;
+    --secondary-foreground: 170 15% 92%;
+
+    --muted: 200 15% 18%;
+    --muted-foreground: 170 10% 55%;
+
+    --accent: 43 96% 56%;
+    --accent-foreground: 200 25% 10%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 15% 20%;
+    --input: 200 15% 20%;
+    --ring: 174 62% 45%;
+
+    --sidebar-background: 200 25% 6%;
+    --sidebar-foreground: 170 15% 85%;
+    --sidebar-primary: 174 62% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 20% 14%;
+    --sidebar-accent-foreground: 170 15% 85%;
+    --sidebar-border: 200 15% 15%;
+    --sidebar-ring: 174 62% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(160,60%,45%)];
+  }
+  
+  .glass-morphism {
+    @apply bg-white/20 backdrop-blur-lg border border-white/20 shadow-xl;
+  }
+  
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-lg;
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-xl;
+  }
+  
+  .shimmer-loading {
+    @apply relative overflow-hidden;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+  
+  .pulse-dot {
+    @apply inline-block w-2 h-2 bg-current rounded-full;
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .status-online {
+    @apply bg-safe text-safe-foreground animate-pulse-glow;
+  }
+  
+  .status-busy {
+    @apply bg-warning text-warning-foreground;
+  }
+  
+  .status-offline {
+    @apply bg-muted text-muted-foreground;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02] hover:border-primary/30;
+  }
+  
+  .nav-link-active {
+    @apply bg-sidebar-accent text-sidebar-primary font-medium border-l-2 border-primary;
+  }
+  
+  .emergency-pulse {
+    animation: emergency-pulse 1s ease-in-out infinite;
+  }
+  
+  .data-grid {
+    @apply grid gap-4 p-4 bg-card/50 rounded-lg border border-border/50;
+  }
+  
+  .metric-card {
+    @apply relative overflow-hidden bg-card border border-border rounded-xl p-6 hover:shadow-lg transition-all duration-300;
+  }
+  
+  .metric-card::before {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-safe;
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+  }
+  
+  .metric-card:hover::before {
+    transform: scaleX(1);
+  }
+  
+  /* Responsive utilities */
+  .responsive-grid {
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  .responsive-text {
+    @apply text-sm sm:text-base lg:text-lg;
+  }
+  
+  .responsive-padding {
+    @apply p-4 sm:p-6 lg:p-8;
+  }
+  
+  .responsive-margin {
+    @apply m-4 sm:m-6 lg:m-8;
+  }
+  
+  .mobile-menu-hidden {
+    @apply hidden sm:flex;
+  }
+  
+  .desktop-only {
+    @apply hidden lg:block;
+  }
+  
+  .mobile-only {
+    @apply block lg:hidden;
+  }
+  
+  /* Touch-friendly targets */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+  
+  /* Safe area insets for mobile */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* Improved mobile scrolling */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Reduced motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Incognito / disguise styles: make the app look like a generic weather/news app */
+.incognito {
+  --background: 210 50% 98%; /* pale blue */
+  --foreground: 220 15% 18%;
+  --card: 0 0% 100%;
+  --primary: 210 80% 50%; /* blue */
+  --secondary: 210 85% 92%;
+  --muted: 210 60% 96%;
+  --border: 210 60% 90%;
+}
+
+.incognito .text-gradient {
+  background-image: linear-gradient(90deg, hsl(210 80% 50%), hsl(200 70% 55%));
+}
+
+/* Hide admin or sensitive UI when incognito is active */
+.incognito .admin-only {
+  display: none !important;
+}
+
+/* Subtle logo replacement sizing for incognito */
+.incognito .brand-icon {
+  transform: none !important;
+}
+
+/* Leaflet popup overrides for dark mode */
+.dark .leaflet-popup-content-wrapper {
+  background: hsl(200 20% 12%);
+  color: hsl(170 15% 92%);
+}
+.dark .leaflet-popup-tip {
+  background: hsl(200 20% 12%);
+}
+.dark .leaflet-control-zoom a {
+  background: hsl(200 20% 12%);
+  color: hsl(170 15% 92%);
+  border-color: hsl(200 15% 20%);
+}
+
+/* Smooth page transitions */
+.page-transition {
+  animation: pageIn 0.4s ease-out;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes emergency-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive app container for phone / tablet / laptop / TV */
+.app-container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  box-sizing: border-box;
+}
+
+@media (min-width: 640px) {
+  .app-container { max-width: 640px; padding-left: 1.25rem; padding-right: 1.25rem; }
+}
+@media (min-width: 768px) {
+  .app-container { max-width: 768px; padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 1024px) {
+  .app-container { max-width: 1024px; padding-left: 2rem; padding-right: 2rem; }
+}
+@media (min-width: 1280px) {
+  .app-container { max-width: 1280px; padding-left: 2.5rem; padding-right: 2.5rem; }
+}
+@media (min-width: 1536px) {
+  /* TV / very large screens: allow wider content */
+  .app-container { max-width: 1600px; padding-left: 3rem; padding-right: 3rem; }
+}
+
+/* Sidebar widths controlled via CSS variables so we can expand on large/TV screens */
+.group\/sidebar-wrapper {
+  --sidebar-width: 16rem;
+}
+
+@media (min-width: 1024px) {
+  .group\/sidebar-wrapper { --sidebar-width: 20rem; }
+}
+
+@media (min-width: 1280px) {
+  .group\/sidebar-wrapper { --sidebar-width: 24rem; }
+}
+
+@media (min-width: 1536px) {
+  /* TV: wide sidebar and increased spacing/typography */
+  .group\/sidebar-wrapper { --sidebar-width: 28rem; }
+
+  html {
+    font-size: 18px;
+  }
+
+  .app-container {
+    padding-left: 4rem;
+    padding-right: 4rem;
+    max-width: 1800px;
+  }
+
+  .metric-card,
+  .card {
+    padding: 2rem;
+  }
+
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.25rem; }
+}
