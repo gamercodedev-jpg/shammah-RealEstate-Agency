@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 const ProfessionalLanding = () => {
+  const navigate = useNavigate();
   const [activeFeature, setActiveFeature] = useState(0);
   const [scrollY, setScrollY] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -123,11 +124,18 @@ const ProfessionalLanding = () => {
             </div>
 
             <div className="flex items-center gap-4">
-              <Button variant="outline" className="border-white/20 text-white hover:bg-white/10">
+              <Button
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10"
+                onClick={() => navigate('/demo')}
+              >
                 <Eye className="h-4 w-4 mr-2" />
                 Demo
               </Button>
-              <Button className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600">
+              <Button
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600"
+                onClick={() => navigate('/report')}
+              >
                 Get Started
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -160,11 +168,20 @@ const ProfessionalLanding = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12 px-4">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-lg px-6 sm:px-8 py-3 sm:py-4 rounded-full">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-lg px-6 sm:px-8 py-3 sm:py-4 rounded-full"
+                onClick={() => navigate('/report')}
+              >
                 <Phone className="h-5 w-5 mr-2" />
                 Report Emergency
               </Button>
-              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-lg px-6 sm:px-8 py-3 sm:py-4 rounded-full">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 text-lg px-6 sm:px-8 py-3 sm:py-4 rounded-full"
+                onClick={() => window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')}
+              >
                 <Play className="h-5 w-5 mr-2" />
                 Watch Demo
               </Button>
@@ -365,11 +382,20 @@ const ProfessionalLanding = () => {
               Join us in our mission to protect and serve communities across Zambia
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-lg px-8 py-4 rounded-full">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-lg px-8 py-4 rounded-full"
+                onClick={() => navigate('/report')}
+              >
                 <Shield className="h-5 w-5 mr-2" />
                 Start Reporting
               </Button>
-              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-lg px-8 py-4 rounded-full">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white/20 text-white hover:bg-white/10 text-lg px-8 py-4 rounded-full"
+                onClick={() => navigate('/contact')}
+              >
                 <Target className="h-5 w-5 mr-2" />
                 Partner With Us
               </Button>
