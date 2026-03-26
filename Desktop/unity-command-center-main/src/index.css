@@ -102,6 +102,47 @@
   }
 }
 
+  /* App shell and header improvements */
+  .app-shell {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, hsl(var(--background) / 0.98) 0%, hsl(var(--background)) 100%);
+  }
+
+  .site-header {
+    background: linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+    backdrop-filter: blur(6px);
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  /* Card improvements for clearer visual hierarchy */
+  .card,
+  .metric-card {
+    border-radius: 0.75rem;
+    box-shadow: 0 6px 18px rgba(16,24,40,0.06);
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .card:hover,
+  .metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(16,24,40,0.08);
+  }
+
+  /* Buttons and primary accents */
+  .btn-primary {
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Slightly larger body font and comfortable line-height */
+  body {
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
 @layer utilities {
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-[hsl(160,60%,45%)];
@@ -412,5 +453,19 @@
   /* Increase list spacing */
   [data-sidebar="group"] {
     padding: 1rem 0.75rem;
+  }
+}
+
+/* Auto-expand collapsed sidebar on hover for large/TV screens */
+@media (min-width: 1536px) {
+  .group\/sidebar-wrapper:hover {
+    --sidebar-width: 34rem;
+  }
+
+  /* Smooth transition for width changes where used */
+  .group\/sidebar-wrapper,
+  .group\/sidebar-wrapper [data-sidebar="sidebar"],
+  .group\/sidebar-wrapper .fixed {
+    transition: width 200ms ease, left 200ms ease, right 200ms ease;
   }
 }

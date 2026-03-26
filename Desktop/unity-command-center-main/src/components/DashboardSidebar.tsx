@@ -58,7 +58,7 @@ export function DashboardSidebar() {
   );
 
   return (
-    <Sidebar collapsible="icon" className="border-r-0 hidden lg:block">
+    <Sidebar collapsible="icon" className="border-r-0 hidden lg:flex">
       <div className="p-4 flex items-center gap-2 border-b border-sidebar-border">
         <Shield className="h-6 w-6 text-sidebar-primary shrink-0" />
         {!collapsed && <span className="font-bold text-sidebar-foreground">SafeReport</span>}
