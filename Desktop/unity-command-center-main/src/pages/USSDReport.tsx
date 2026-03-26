@@ -192,17 +192,23 @@ const USSDReport = () => {
               <p className="text-sm font-semibold text-foreground">Where are you?</p>
             </div>
             <p className="text-xs text-muted-foreground">Select your province</p>
-            <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-thin pr-2">
-              {provinces.map((p) => (
-                <motion.button 
-                  key={p} 
-                  onClick={() => handleOption(p)}
-                  whileHover={{ x: 4, backgroundColor: "rgba(59, 130, 246, 0.1)" }}
-                  className="block w-full text-left text-xs px-3 py-2.5 rounded-lg bg-sidebar-accent/50 text-foreground hover:bg-primary/10 transition-all duration-200 border border-transparent hover:border-primary/30"
-                >
-                  {p}
-                </motion.button>
-              ))}
+            <div className="select-list max-h-80 lg:max-h-96 overflow-y-auto pr-2">
+              <div className="grid gap-3">
+                {provinces.map((p) => (
+                  <motion.button
+                    key={p}
+                    onClick={() => handleOption(p)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full text-left text-base md:text-lg px-4 py-4 rounded-md bg-card/80 text-foreground hover:bg-primary/5 transition-all duration-200 border border-border/50 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span className="font-medium">{p}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </motion.div>
         );
@@ -214,17 +220,23 @@ const USSDReport = () => {
               <p className="text-sm font-semibold text-foreground">Select District</p>
             </div>
             <p className="text-xs text-muted-foreground">in {province}</p>
-            <div className="space-y-1.5">
-              {(districts[province] || []).map((d) => (
-                <motion.button 
-                  key={d} 
-                  onClick={() => handleOption(d)}
-                  whileHover={{ x: 4, backgroundColor: "rgba(59, 130, 246, 0.1)" }}
-                  className="block w-full text-left text-xs px-3 py-2.5 rounded-lg bg-sidebar-accent/50 text-foreground hover:bg-primary/10 transition-all duration-200 border border-transparent hover:border-primary/30"
-                >
-                  {d}
-                </motion.button>
-              ))}
+            <div className="select-list max-h-96 overflow-y-auto pr-2">
+              <div className="grid gap-3">
+                {(districts[province] || []).map((d) => (
+                  <motion.button
+                    key={d}
+                    onClick={() => handleOption(d)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full text-left text-base md:text-lg px-4 py-4 rounded-md bg-card/80 text-foreground hover:bg-primary/5 transition-all duration-200 border border-border/50 shadow-sm"
+                  >
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-5 w-5 text-primary flex-shrink-0" />
+                      <span className="font-medium">{d}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </motion.div>
         );

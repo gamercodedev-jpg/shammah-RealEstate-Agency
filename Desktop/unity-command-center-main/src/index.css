@@ -456,6 +456,31 @@
   }
 }
 
+/* Select list styles used by reporting form */
+.select-list {
+  -webkit-overflow-scrolling: touch;
+}
+.select-list .shadow-sm { box-shadow: 0 2px 8px rgba(16,24,40,0.04); }
+
+/* Thin cross-browser scrollbar */
+.select-list::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.select-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.select-list::-webkit-scrollbar-thumb {
+  background: rgba(100,116,139,0.35);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.select-list::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.5); }
+
+/* Firefox scrollbar styles */
+.select-list { scrollbar-width: thin; scrollbar-color: rgba(100,116,139,0.35) transparent; }
+
 /* Auto-expand collapsed sidebar on hover for large/TV screens */
 @media (min-width: 1536px) {
   .group\/sidebar-wrapper:hover {
